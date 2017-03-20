@@ -53,6 +53,7 @@ public class GetProductIT extends BaseIT {
 			client.createProduct(product);
 		}
 	}
+	
 
 	@AfterClass
 	public static void oneTimeTearDown() {

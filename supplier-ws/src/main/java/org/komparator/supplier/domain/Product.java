@@ -1,5 +1,6 @@
 package org.komparator.supplier.domain;
 
+
 /**
  * Product entity. Only the product quantity is mutable so its get/set methods
  * are synchronized.
@@ -15,13 +16,15 @@ public class Product {
 	private int price;
 
 	/** Create a new product */
-	public Product(String pid, String description, int quantity, int price) {
+	public Product(String pid, String description, int quantity, int price)  {
+		
 		this.productId = pid;
 		this.description = description;
 		this.quantity = quantity;
 		this.price = price;
 	}
-
+	
+	
 	public String getId() {
 		return productId;
 	}

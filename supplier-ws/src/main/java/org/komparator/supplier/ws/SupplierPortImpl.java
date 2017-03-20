@@ -2,7 +2,7 @@ package org.komparator.supplier.ws;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Set;
 import javax.jws.WebService;
 
 import org.komparator.supplier.domain.Product;
@@ -11,14 +11,15 @@ import org.komparator.supplier.domain.QuantityException;
 import org.komparator.supplier.domain.Supplier;
 
 // TODO
-//@WebService(
-//		endpointInterface = "org.komparator.supplier.ws.SupplierPortType", 
-//		wsdlLocation = "...", 
-//		name = "SupplierWebService", 
-//		portName = "...Port", 
-//		targetNamespace = "...", 
-//		serviceName = "...Service"
-//)
+@WebService(
+		endpointInterface = "org.komparator.supplier.ws.SupplierPortType", 
+		wsdlLocation = "supplier.1_0.wsdl", 
+		name = "SupplierWebService", 
+		portName = "SupplierPort", 
+		targetNamespace = "http://ws.supplier.komparator.org/", 
+		serviceName = "SupplierService"
+		)
+
 public class SupplierPortImpl { // implements SupplierPortType {
 
 	// end point manager
@@ -41,6 +42,7 @@ public class SupplierPortImpl { // implements SupplierPortType {
 		// retrieve product
 		Supplier supplier = Supplier.getInstance();
 		Product p = supplier.getProduct(productId);
+		
 		if (p != null) {
 			ProductView pv = newProductView(p);
 			// product found!
@@ -51,22 +53,69 @@ public class SupplierPortImpl { // implements SupplierPortType {
 	}
 
 	public List<ProductView> searchProducts(String descText) throws BadText_Exception {
-		// TODO
 		
+		List<ProductView> result = new ArrayList<ProductView>();
 		
+		//check product descText
+		if(descText == null){
+			throwBadText("Product description cannot be null");
+		}
 		
+		if(descText.isEmpty()){
+			throwBadText("Product description cannot be empty");
+		}
 		
-		return null;
+		Supplier supplier = Supplier.getInstance();
+		Set<String> IDlist = supplier.getProductsIDs();
+		
+		for(String s: IDlist){
+			Product p = supplier.getProduct(s);
+			if(p.getDescription().contentEquals(descText)){
+				ProductView pv = newProductView(p);
+				result.add(pv);
+			}
+		}
+		return result;
 	}
 
 	public String buyProduct(String productId, int quantity)
 			throws BadProductId_Exception, BadQuantity_Exception, InsufficientQuantity_Exception {
-		// TODO
 		
+		String Pid = "";
+			
+		if (productId == null){
+			throwBadProductId("Product identifier cannot be null!");
+		}
 		
+		if (productId.trim().length() == 0){
+			throwBadProductId("Product identifier cannot be empty!");
+		}
 		
+		if(productId.contains(" ")){
+			throwBadProductId("Product identifier cannot have spaces!");
+		}
 		
-		return null;
+		if (quantity <= 0){
+			throwBadQuantity("Product quantity cannot be negative!");
+		}
+			
+		Supplier supplier = Supplier.getInstance();
+
+		if (!supplier.productExists(productId)){
+			throwBadProductId("Product identifier does not exits!");
+		}
+		
+		Product p = supplier.getProduct(productId);
+		
+		try{
+			
+			Pid = supplier.buyProduct(productId, quantity);
+			
+		} catch (QuantityException e){
+			throwInsufficientQuantity("Product quantity is not available!");
+		  }
+		
+		return Pid;
 	}
 
 	// Auxiliary operations --------------------------------------------------
