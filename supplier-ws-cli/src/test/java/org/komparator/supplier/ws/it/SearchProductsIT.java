@@ -23,8 +23,8 @@ public class SearchProductsIT extends BaseIT {
 	// static members
 
 	// one-time initialization and clean-up
-	@BeforeClass
-	public static void oneTimeSetUp() throws BadText_Exception, BadProductId_Exception, BadProduct_Exception  {
+	@Before
+	public void oneTimeSetUp() throws BadText_Exception, BadProductId_Exception, BadProduct_Exception  {
 		
 		// clear remote service state before all tests
 		client.clear();
@@ -65,21 +65,10 @@ public class SearchProductsIT extends BaseIT {
 		
 	}
 
-	@AfterClass
-	public static void oneTimeTearDown() {
+	@After
+	public void oneTimeTearDown() {
 		// clear remote service state after all tests
 		client.clear();
-	}
-
-	// members
-
-	// initialization and clean-up for each test
-	@Before
-	public void setUp() {
-	}
-
-	@After
-	public void tearDown() {
 	}
 
 	// tests
@@ -204,5 +193,25 @@ public class SearchProductsIT extends BaseIT {
 			
 			assertEquals("X1", resultBasket.get(0).getId());
 		}
+	
+	@Test
+	public void successPartDescript () throws BadText_Exception, BadProductId_Exception, BadProduct_Exception{
+	
+		List<ProductView> resultBasket=  client.searchProducts("Basket");
+		
+		assertEquals("X1", resultBasket.get(0).getId());
+		
+	}
+	
+	@Test
+	public void successPartDescript2 () throws BadText_Exception, BadProductId_Exception, BadProduct_Exception{
+	
+		List<ProductView> resultSoccer=  client.searchProducts("Soccer");
+		
+		assertEquals("B4", resultSoccer.get(0).getId());
+		
+		assertEquals("Z3", resultSoccer.get(1).getId());
+		
+	}
 	
 }

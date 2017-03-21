@@ -104,8 +104,19 @@ public class BuyProductIT extends BaseIT {
 	@Test(expected = BadProductId_Exception.class)
 		public void stringIdWithSpaces() throws BadQuantity_Exception, BadProductId_Exception, InsufficientQuantity_Exception{
 		
-			client.buyProduct("ol a",2);
+			client.buyProduct("Y2 2",2);
 	}
+	
+	@Test(expected = BadProductId_Exception.class)
+		public void buyProductTabTest() throws BadProductId_Exception, BadQuantity_Exception, InsufficientQuantity_Exception {
+			client.buyProduct("\t", 10);
+		}
+	
+	@Test(expected = BadProductId_Exception.class)
+		public void buyProductNewlineTest() throws BadProductId_Exception, BadQuantity_Exception, InsufficientQuantity_Exception {
+			client.buyProduct("\n", 3);
+	}
+
 	 
 	// main tests
 	
@@ -128,12 +139,27 @@ public class BuyProductIT extends BaseIT {
 	}
 	
 	@Test
-	public void success () throws BadQuantity_Exception, BadProductId_Exception, InsufficientQuantity_Exception{
+	public void successQuantity() throws BadQuantity_Exception, BadProductId_Exception, InsufficientQuantity_Exception{
 		
 		client.buyProduct("X1", 3);
 		assertEquals(7 , client.getProduct("X1").getQuantity() );
 		
-	}	
+	}
+	
+	@Test
+	public void successQuantityDownToZero() throws BadQuantity_Exception, BadProductId_Exception, InsufficientQuantity_Exception, BadProduct_Exception{
+		
+		ProductView product0 = new ProductView();
+		product0.setId("D1");
+		product0.setDesc("Tennis");
+		product0.setPrice(5);
+		product0.setQuantity(50);
+		client.createProduct(product0);
+		
+		client.buyProduct("D1", 50);
+		assertEquals(0 , client.getProduct("D1").getQuantity() );
+		
+	}
 
 	
 }

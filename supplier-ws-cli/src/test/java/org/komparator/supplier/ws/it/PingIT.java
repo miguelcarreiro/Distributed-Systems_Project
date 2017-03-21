@@ -1,5 +1,6 @@
 package org.komparator.supplier.ws.it;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import org.junit.Test;
@@ -17,6 +18,14 @@ public class PingIT extends BaseIT {
 	@Test
 	public void pingEmptyTest() {
 		assertNotNull(client.ping("test"));
+	}
+	
+	@Test
+	public void pingVerifyMsg() {
+		
+		String msg = client.ping("client");
+		
+		assertEquals(msg, "Hello client from Supplier");
 	}
 
 }

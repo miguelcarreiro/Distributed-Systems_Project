@@ -70,7 +70,7 @@ public class SupplierPortImpl { // implements SupplierPortType {
 		
 		for(String s: IDlist){
 			Product p = supplier.getProduct(s);
-			if(p.getDescription().contentEquals(descText)){
+			if(p.getDescription().contains(descText)){
 				ProductView pv = newProductView(p);
 				result.add(pv);
 			}
@@ -91,8 +91,8 @@ public class SupplierPortImpl { // implements SupplierPortType {
 			throwBadProductId("Product identifier cannot be empty!");
 		}
 		
-		if(productId.contains(" ")){
-			throwBadProductId("Product identifier cannot have spaces!");
+		if(productId.contains(" ") || productId.contains("\t") || productId.contains("\n")){
+			throwBadProductId("Product identifier cannot have spaces, tabs or new line!");
 		}
 		
 		if (quantity <= 0){
@@ -104,8 +104,6 @@ public class SupplierPortImpl { // implements SupplierPortType {
 		if (!supplier.productExists(productId)){
 			throwBadProductId("Product identifier does not exits!");
 		}
-		
-		Product p = supplier.getProduct(productId);
 		
 		try{
 			
