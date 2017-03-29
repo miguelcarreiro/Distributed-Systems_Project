@@ -4,9 +4,21 @@ import java.io.IOException;
 
 import javax.xml.ws.Endpoint;
 
+import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
+
 
 /** End point manager */
 public class SupplierEndpointManager {
+
+	/** UDDI naming server location */
+	private String uddiURL = null;
+	/** Web Service name */
+	private String wsName = null;
+
+	/** Get Web Service UDDI publication name */
+	public String getWsName() {
+		return wsName;
+	}
 
 	/** Web Service location to publish */
 	private String wsURL = null;
@@ -20,9 +32,16 @@ public class SupplierEndpointManager {
 //		return portImpl;
 //	}
 
-	/** Web Service end point */
+	/** Web Service endpoint */
 	private Endpoint endpoint = null;
+	/** UDDI Naming instance for contacting UDDI server */
+	private UDDINaming uddiNaming = null;
 
+	/** Get UDDI Naming instance for contacting UDDI server */
+	UDDINaming getUddiNaming() {
+		return uddiNaming;
+	}
+	
 	/** output option **/
 	private boolean verbose = true;
 
@@ -38,6 +57,13 @@ public class SupplierEndpointManager {
 	public SupplierEndpointManager(String wsURL) {
 		if (wsURL == null)
 			throw new NullPointerException("Web Service URL cannot be null!");
+		this.wsURL = wsURL;
+	}
+	
+	/** constructor with provided UDDI location, WS name, and WS URL */
+	public SupplierEndpointManager(String uddiURL, String wsName, String wsURL) {
+		this.uddiURL = uddiURL;
+		this.wsName = wsName;
 		this.wsURL = wsURL;
 	}
 
@@ -90,6 +116,44 @@ public class SupplierEndpointManager {
 			}
 		}
 		this.portImpl = null;
+	}
+	
+	/* UDDI */
+
+	void publishToUDDI() throws Exception {
+		try {
+			// publish to UDDI
+			if (uddiURL != null) {
+				if (verbose) {
+					System.out.printf("Publishing '%s' to UDDI at %s%n", wsName, uddiURL);
+				}
+				uddiNaming = new UDDINaming(uddiURL);
+				uddiNaming.rebind(wsName, wsURL);
+			}
+		} catch (Exception e) {
+			uddiNaming = null;
+			if (verbose) {
+				System.out.printf("Caught exception when binding to UDDI: %s%n", e);
+			}
+			throw e;
+		}
+	}
+
+	void unpublishFromUDDI() {
+		try {
+			if (uddiNaming != null) {
+				// delete from UDDI
+				uddiNaming.unbind(wsName);
+				if (verbose) {
+					System.out.printf("Unpublished '%s' from UDDI%n", wsName);
+				}
+				uddiNaming = null;
+			}
+		} catch (Exception e) {
+			if (verbose) {
+				System.out.printf("Caught exception when unbinding: %s%n", e);
+			}
+		}
 	}
 
 }

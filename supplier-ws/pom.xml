@@ -20,8 +20,11 @@
         <mainclass>org.komparator.supplier.ws.SupplierApp</mainclass>
 
         <ws.host>localhost</ws.host>
-        <ws.port>8081</ws.port>
+        <ws.i>1</ws.i>
+        <ws.port>808${ws.i}</ws.port>
         <ws.url>http://${ws.host}:${ws.port}/supplier-ws/endpoint</ws.url>
+        <ws.name>T21_Supplier${ws.i}</ws.name>
+
     </properties>
 
     <dependencies>
@@ -30,6 +33,12 @@
             <groupId>com.sun.xml.ws</groupId>
             <artifactId>jaxws-rt</artifactId>
             <version>2.2.10</version>
+        </dependency>
+        <!-- UDDI Naming -->
+        <dependency>
+            <groupId>pt.ulisboa.tecnico.sdis</groupId>
+            <artifactId>uddi-naming</artifactId>
+            <version>1.2</version>
         </dependency>
     </dependencies>
 
