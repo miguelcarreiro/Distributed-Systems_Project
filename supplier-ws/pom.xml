@@ -19,6 +19,8 @@
 
         <mainclass>org.komparator.supplier.ws.SupplierApp</mainclass>
 
+       
+
         <ws.host>localhost</ws.host>
         <ws.i>1</ws.i>
         <ws.port>808${ws.i}</ws.port>

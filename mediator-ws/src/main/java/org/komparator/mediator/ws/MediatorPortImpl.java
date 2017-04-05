@@ -20,7 +20,17 @@ public class MediatorPortImpl {
     
 	// Auxiliary operations --------------------------------------------------	
 	
-    // TODO
+	public String ping(String name) {
+		if (name == null || name.trim().length() == 0)
+			name = "friend";
+
+		String wsName = "Mediator";
+
+		StringBuilder builder = new StringBuilder();
+		builder.append("Hello ").append(name);
+		builder.append(" from ").append(wsName);
+		return builder.toString();
+	}
 
 	
 	// View helpers -----------------------------------------------------

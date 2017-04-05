@@ -7,15 +7,7 @@ import java.util.Map;
 
 import javax.xml.ws.BindingProvider;
 
-import org.komparator.supplier.ws.BadProductId_Exception;
-import org.komparator.supplier.ws.BadProduct_Exception;
-import org.komparator.supplier.ws.BadQuantity_Exception;
-import org.komparator.supplier.ws.BadText_Exception;
-import org.komparator.supplier.ws.InsufficientQuantity_Exception;
-import org.komparator.supplier.ws.ProductView;
-import org.komparator.supplier.ws.PurchaseView;
-import org.komparator.supplier.ws.SupplierPortType;
-import org.komparator.supplier.ws.SupplierService;
+import org.komparator.supplier.ws.*;
 
 /**
  * Client port wrapper.
