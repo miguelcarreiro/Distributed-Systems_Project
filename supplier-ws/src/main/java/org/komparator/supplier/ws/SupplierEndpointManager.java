@@ -6,7 +6,6 @@ import javax.xml.ws.Endpoint;
 
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 
-
 /** End point manager */
 public class SupplierEndpointManager {
 
@@ -26,11 +25,10 @@ public class SupplierEndpointManager {
 	/** Port implementation */
 	private SupplierPortImpl portImpl = new SupplierPortImpl(this);
 
-// TODO
-//	/** Obtain Port implementation */
-//	public SupplierPortType getPort() {
-//		return portImpl;
-//	}
+	/** Obtain Port implementation */
+	public SupplierPortType getPort() {
+		return portImpl;
+	}
 
 	/** Web Service endpoint */
 	private Endpoint endpoint = null;
@@ -52,13 +50,6 @@ public class SupplierEndpointManager {
 	public void setVerbose(boolean verbose) {
 		this.verbose = verbose;
 	}
-
-	/** constructor with provided web service URL */
-	public SupplierEndpointManager(String wsURL) {
-		if (wsURL == null)
-			throw new NullPointerException("Web Service URL cannot be null!");
-		this.wsURL = wsURL;
-	}
 	
 	/** constructor with provided UDDI location, WS name, and WS URL */
 	public SupplierEndpointManager(String uddiURL, String wsName, String wsURL) {
@@ -67,15 +58,26 @@ public class SupplierEndpointManager {
 		this.wsURL = wsURL;
 	}
 
+	/** constructor with provided web service URL */
+	public SupplierEndpointManager(String wsURL) {
+		if (wsURL == null)
+			throw new NullPointerException("Web Service URL cannot be null!");
+		this.wsURL = wsURL;
+	}
+	
 	/* end point management */
 
 	public void start() throws Exception {
+		
+		
 		try {
 			// publish end point
 			endpoint = Endpoint.create(this.portImpl);
+			
 			if (verbose) {
 				System.out.printf("Starting %s%n", wsURL);
 			}
+			
 			endpoint.publish(wsURL);
 		} catch (Exception e) {
 			endpoint = null;
@@ -85,6 +87,9 @@ public class SupplierEndpointManager {
 			}
 			throw e;
 		}
+		
+		publishToUDDI();
+		
 	}
 
 	public void awaitConnections() {
@@ -116,6 +121,7 @@ public class SupplierEndpointManager {
 			}
 		}
 		this.portImpl = null;
+		unpublishFromUDDI();
 	}
 	
 	/* UDDI */
@@ -123,10 +129,12 @@ public class SupplierEndpointManager {
 	void publishToUDDI() throws Exception {
 		try {
 			// publish to UDDI
+			
 			if (uddiURL != null) {
 				if (verbose) {
 					System.out.printf("Publishing '%s' to UDDI at %s%n", wsName, uddiURL);
 				}
+				
 				uddiNaming = new UDDINaming(uddiURL);
 				uddiNaming.rebind(wsName, wsURL);
 			}

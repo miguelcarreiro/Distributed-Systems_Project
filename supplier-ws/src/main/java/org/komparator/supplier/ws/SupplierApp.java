@@ -14,13 +14,17 @@ public class SupplierApp {
 		String uddiURL = null;
 		String wsName = null;
 		String wsURL = null;
-
+		
+		System.out.printf("OI " + args[0] + "\n");
+	
 		// Create server implementation object
 		SupplierEndpointManager endpoint = null;
+		
 		if (args.length == 1) {
 			wsURL = args[0];
 			endpoint = new SupplierEndpointManager(wsURL);
 		} else if (args.length >= 3) {
+			
 			uddiURL = args[0];
 			wsName = args[1];
 			wsURL = args[2];

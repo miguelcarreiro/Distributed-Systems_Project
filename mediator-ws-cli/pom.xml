@@ -23,7 +23,7 @@
         <mainclass>org.komparator.mediator.ws.cli.MediatorClientApp</mainclass>
 
         <ws.name>T21_Mediator</ws.name>
-        <uddi.url>http://localhost:9090</uddi.url>
+        <uddi.url>http://t21:nondij9M@uddi.sd.rnl.tecnico.ulisboa.pt:9090</uddi.url>
     </properties>
 
     <dependencies>
