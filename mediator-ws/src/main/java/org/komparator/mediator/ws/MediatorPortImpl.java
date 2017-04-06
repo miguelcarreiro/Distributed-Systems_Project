@@ -21,6 +21,8 @@ import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDIRecord;
 
+
+
 @WebService(
 		endpointInterface = "org.komparator.mediator.ws.MediatorPortType", 
 		wsdlLocation = "mediator.1_0.wsdl", 
@@ -38,57 +40,15 @@ public class MediatorPortImpl implements MediatorPortType {
 	public MediatorPortImpl(MediatorEndpointManager endpointManager) {
 		this.endpointManager = endpointManager;
 	}
-	
-	UDDINaming uddi = endpointManager.getUddiNaming();
+		
+	private List<CartView> cartList = new ArrayList<CartView>();
 
 	// Main operations -------------------------------------------------------
-
-    // TODO
 	
-    
-	// Auxiliary operations --------------------------------------------------	
-	
-	public Collection<UDDIRecord> listSuppliers (){
-		
-		Collection<UDDIRecord> colec = null;
-		
-		try{
-			colec = uddi.listRecords("T21_Supplier%");
-			
-		} catch ( UDDINamingException e ){
-			
-			return null;
-
-		}
-		return colec;
-	}
-	
-	public String ping(String string){
-		
-		Collection<UDDIRecord> colec = listSuppliers();
-		
-		for (UDDIRecord record : colec ){
-			
-			try {
-				uddi.bind(record);
-				
-				System.out.println("Texto: " + record.getOrgName());
-				
-			} catch (UDDINamingException e) {
-				
-				e.printStackTrace();
-			}
-		}
-		return "Ok";
-	}
-
-	@Override
-	public void clear() {
-	
-	}
-
 	@Override
 	public List<ItemView> getItems(String productId) throws InvalidItemId_Exception {
+		
+		UDDINaming uddi = endpointManager.getUddiNaming();
 		
 		Collection<UDDIRecord> colec = listSuppliers();
 		
@@ -117,6 +77,18 @@ public class MediatorPortImpl implements MediatorPortType {
 				
 				product = supplier.getProduct(productId);
 				
+				itemId.setProductId(productId);
+				
+				itemId.setSupplierId(record.getOrgName());
+					
+				item.setDesc(product.getDesc());
+					
+				item.setPrice(product.getPrice());
+					
+				item.setItemId(itemId);
+							
+				productList.add(item);
+				
 			} catch (SupplierClientException e) {
 				
 				e.printStackTrace();
@@ -126,31 +98,18 @@ public class MediatorPortImpl implements MediatorPortType {
 				e.printStackTrace();
 			}
 				
-			itemId.setProductId(productId);
-				
-			itemId.setSupplierId(record.getOrgName());
-				
-			item.setDesc(product.getDesc());
-				
-			item.setPrice(product.getPrice());
-				
-			item.setItemId(itemId);
-						
-			productList.add(item);
+			
 						
 		}
 		
 		return productList;
 	}
-
-	@Override
-	public List<CartView> listCarts() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
+	
+	
 	@Override
 	public List<ItemView> searchItems(String descText) throws InvalidText_Exception {
+		
+		UDDINaming uddi = endpointManager.getUddiNaming();
 		
 		Collection<UDDIRecord> colec = listSuppliers();
 			
@@ -200,21 +159,16 @@ public class MediatorPortImpl implements MediatorPortType {
 		
 		return productList;
 	}
-
-	@Override
-	public ShoppingResultView buyCart(String cartId, String creditCardNr)
-			throws EmptyCart_Exception, InvalidCartId_Exception, InvalidCreditCard_Exception {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
+	
 	@Override
 	public void addToCart(String cartId, ItemIdView itemId, int itemQty) throws InvalidCartId_Exception,
 			InvalidItemId_Exception, InvalidQuantity_Exception, NotEnoughItems_Exception {
 		
+		UDDINaming uddi = endpointManager.getUddiNaming();
+		
 		Collection<UDDIRecord> colec = listSuppliers();
 		
-		List<CartItemView> cart = new ArrayList<CartItemView>();
+		List<CartItemView> items = new ArrayList<CartItemView>();
 		
 		ItemView iV = new ItemView();
 		
@@ -231,7 +185,6 @@ public class MediatorPortImpl implements MediatorPortType {
 		if(itemQty <0){
 			throwInvalidQuantity("Quantity cannot be negative!");
 		}
-		
 		for (UDDIRecord record : colec ){
 			 
 			if(record.getOrgName().equals(itemId.getSupplierId())){
@@ -255,9 +208,9 @@ public class MediatorPortImpl implements MediatorPortType {
 					
 					e.printStackTrace();
 				}
-				if (cart.contains(itemId.getProductId())){
+				if (items.contains(itemId.getProductId())){
 					
-					for(CartItemView c: cart){
+					for(CartItemView c: items){
 						
 						if(c.getItem().equals(itemId)){
 							
@@ -279,12 +232,147 @@ public class MediatorPortImpl implements MediatorPortType {
 					
 					cartItem.setQuantity(itemQty);
 					
-					cart.add(cartItem);
+					items.add(cartItem);
 				}
 			}
 		}
+		if(cartExists(cartId) == false){
+			
+			CartView carrinho = new CartView();
+			
+			carrinho.items = items;
+			
+			carrinho.setCartId(cartId);
+			
+			cartList.add(carrinho);
+		}
+		
+		if(getCart(cartId) != null){
+			
+			CartView carrinho = getCart(cartId);
+			
+			carrinho.items = items;
+		}
+	}
+	
+	@Override
+	public ShoppingResultView buyCart(String cartId, String creditCardNr)
+			throws EmptyCart_Exception, InvalidCartId_Exception, InvalidCreditCard_Exception {
+		
+		UDDINaming uddi = endpointManager.getUddiNaming();
+		
+		Collection<UDDIRecord> colec = listSuppliers();
+		
+		if(cartId == null){
+			
+			throwInvalidCartId("CartId cannot be null!");
+		}
+		
+		if(creditCardNr == null){
+			throwInvalidCreditCard("CreditCartNr cannot be null!");
+		}
+		
+		/*if(!CreditCardClient.validateNumber(creditCardNr)){
+			
+		}*/
+		/*
+		for (UDDIRecord record : colec ){
+		
+			SupplierClient supplier;
+			
+			for(CartView lista: cartList){
+				
+				if(lista.getCartId().equals(cartId)){
+					
+					for()
+					
+					try 
+					{
+					} catch (SupplierClientException e) {
+						
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+		*/
+		
+		return null;
+	}
+	// Auxiliary operations --------------------------------------------------	
+	
+	public boolean cartExists(String cartId){
+		
+		for(CartView cartview: cartList){
+			
+			if(cartview.getCartId().equals(cartId)){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public CartView getCart(String cartId){
+		
+		for (CartView lista: cartList){
+			
+			if(lista.getCartId().equals(cartId)){
+				return lista;
+			}
+		}
+		return null;
+	}
+	
+	public Collection<UDDIRecord> listSuppliers (){
+		
+		UDDINaming uddi = endpointManager.getUddiNaming();
+		
+		Collection<UDDIRecord> colec = null;
+		
+		try{
+			colec = uddi.listRecords("T21_Supplier%");
+			
+		} catch ( UDDINamingException e ){
+			
+			return null;
+
+		}
+		return colec;
+	}
+	
+	public String ping(String string){
+		
+		UDDINaming uddi = endpointManager.getUddiNaming();
+		
+		Collection<UDDIRecord> colec = listSuppliers();
+		
+		for (UDDIRecord record : colec ){
+			
+			try {
+				uddi.bind(record);
+				
+				System.out.println("Texto: " + record.getOrgName());
+				
+			} catch (UDDINamingException e) {
+				
+				e.printStackTrace();
+			}
+		}
+		return "Ok";
 	}
 
+	@Override
+	public void clear() {
+	
+	}
+
+	
+	@Override
+	public List<CartView> listCarts() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
 	@Override
 	public List<ShoppingResultView> shopHistory() {
 		// TODO Auto-generated method stub
@@ -328,6 +416,12 @@ public class MediatorPortImpl implements MediatorPortType {
 		NotEnoughItems faultInfo = new NotEnoughItems();
 		faultInfo.message = message;
 		throw new NotEnoughItems_Exception(message, faultInfo);
+	}
+	
+	private void throwInvalidCreditCard(final String message) throws InvalidCreditCard_Exception {
+		InvalidCreditCard faultInfo = new InvalidCreditCard();
+		faultInfo.message = message;
+		throw new InvalidCreditCard_Exception(message, faultInfo);
 	}
 
 }
