@@ -14,6 +14,7 @@ import org.komparator.supplier.ws.BadProductId_Exception;
 import org.komparator.supplier.ws.BadText;
 import org.komparator.supplier.ws.BadText_Exception;
 import org.komparator.supplier.ws.ProductView;
+import org.komparator.supplier.ws.PurchaseView;
 import org.komparator.supplier.ws.cli.SupplierClient;
 import org.komparator.supplier.ws.cli.SupplierClientException;
 
@@ -48,6 +49,16 @@ public class MediatorPortImpl implements MediatorPortType {
 	@Override
 	public List<ItemView> getItems(String productId) throws InvalidItemId_Exception {
 		
+		if (productId == null){
+			throwInvalidItemId("Product identifier cannot be null!");
+		}
+		
+		productId = productId.trim();
+		
+		if (productId.length() == 0){
+			throwInvalidItemId("Product identifier cannot be empty or whitespace!");
+		}
+		
 		UDDINaming uddi = endpointManager.getUddiNaming();
 		
 		Collection<UDDIRecord> colec = listSuppliers();
@@ -59,17 +70,9 @@ public class MediatorPortImpl implements MediatorPortType {
 		ItemIdView itemId = new ItemIdView();
 		
 		List<ItemView> productList= new ArrayList<ItemView>();
+		int suppliers = 0;
 		
 		for (UDDIRecord record : colec ){
-			 
-			if (productId == null)
-				throwInvalidItemId("Product identifier cannot be null!");
-			
-			productId = productId.trim();
-			if (productId.length() == 0)
-				
-				throwInvalidItemId("Product identifier cannot be empty or whitespace!");
-			
 			// retrieve product
 			SupplierClient supplier;
 			try {
@@ -77,30 +80,38 @@ public class MediatorPortImpl implements MediatorPortType {
 				
 				product = supplier.getProduct(productId);
 				
-				itemId.setProductId(productId);
-				
-				itemId.setSupplierId(record.getOrgName());
+				if (product != null) {
+					suppliers++;
+					System.out.println("Product ID: " + productId + "\n");
+					System.out.println("Supplier ID: " + record.getOrgName() + "\n");
+					System.out.println("Product description: " + product.getDesc() + "\n");
+					System.out.println("Product price: " + product.getPrice() + "\n");
+					System.out.println("Item ID: " + itemId + "\n");
+					itemId.setProductId(productId);
 					
-				item.setDesc(product.getDesc());
+					itemId.setSupplierId(record.getOrgName());
 					
-				item.setPrice(product.getPrice());
+					item.setDesc(product.getDesc());
 					
-				item.setItemId(itemId);
-							
-				productList.add(item);
-				
+					item.setPrice(product.getPrice());
+						
+					item.setItemId(itemId);
+								
+					productList.add(item);
+				}
+				product = null;
+			} catch (BadProductId_Exception e) {
+	
 			} catch (SupplierClientException e) {
 				
 				e.printStackTrace();
 				
-			} catch (BadProductId_Exception e) {
-				
-				e.printStackTrace();
 			}
-				
-			
-						
 		}
+		
+		if(suppliers < 1){
+			throwInvalidItemId("ID not found!");
+		}	
 		
 		return productList;
 	}
@@ -109,50 +120,45 @@ public class MediatorPortImpl implements MediatorPortType {
 	@Override
 	public List<ItemView> searchItems(String descText) throws InvalidText_Exception {
 		
+		if (descText == null){
+			throwInvalidText("Product description cannot be null!");
+		}
+		
+		if(descText.isEmpty()){
+			throwInvalidText("Product description cannot be empty!");
+		}
+		
 		UDDINaming uddi = endpointManager.getUddiNaming();
 		
 		Collection<UDDIRecord> colec = listSuppliers();
 			
-		ItemView item = new ItemView();
-		
-		ItemIdView itemId = new ItemIdView();
 		
 		List<ItemView> productList= new ArrayList<ItemView>();
 		
 		for (UDDIRecord record : colec ){
 			 
-			if (descText == null)
-				throwInvalidText("Product description cannot be null!");
-			
-			// retrieve product
 			SupplierClient supplier;
 			
 			try {
 				supplier = new SupplierClient(record.getUrl());
-				
+		
 				List<ProductView> IDlist = supplier.searchProducts(descText);
 				
 				for(ProductView p: IDlist){
+					ItemView item = new ItemView();
+					ItemIdView itemId = new ItemIdView();
 					
 					itemId.setProductId(p.getId());
-					
 					itemId.setSupplierId(record.getOrgName());
-						
 					item.setDesc(p.getDesc());
-						
 					item.setPrice(p.getPrice());
-						
 					item.setItemId(itemId);
 								
 					productList.add(item);
 					
 				}
-			} catch (SupplierClientException e) {
-				
-				e.printStackTrace();
-				
 			} catch (BadText_Exception e) {
-				
+			} catch (SupplierClientException e) {
 				e.printStackTrace();
 			} 
 		}
@@ -163,16 +169,14 @@ public class MediatorPortImpl implements MediatorPortType {
 	@Override
 	public void addToCart(String cartId, ItemIdView itemId, int itemQty) throws InvalidCartId_Exception,
 			InvalidItemId_Exception, InvalidQuantity_Exception, NotEnoughItems_Exception {
-		
+		System.out.println("Comecou addToCart\n");
 		UDDINaming uddi = endpointManager.getUddiNaming();
 		
 		Collection<UDDIRecord> colec = listSuppliers();
 		
-		List<CartItemView> items = new ArrayList<CartItemView>();
+		List<CartItemView> itemsOfCart = new ArrayList<CartItemView>();
 		
-		ItemView iV = new ItemView();
 		
-		ProductView product = null;
 		
 		if(cartId == null){
 			throwInvalidCartId("CartId cannot be null!");
@@ -190,6 +194,9 @@ public class MediatorPortImpl implements MediatorPortType {
 			if(record.getOrgName().equals(itemId.getSupplierId())){
 				
 				SupplierClient supplier;
+				
+				
+				ProductView product = null;
 				try {
 					supplier = new SupplierClient(record.getUrl());
 					
@@ -204,13 +211,11 @@ public class MediatorPortImpl implements MediatorPortType {
 					
 					e.printStackTrace();
 					
-				} catch (BadProductId_Exception e) {
+				} catch (BadProductId_Exception e) {}
+				
+				if (itemsOfCart.contains(itemId.getProductId())){
 					
-					e.printStackTrace();
-				}
-				if (items.contains(itemId.getProductId())){
-					
-					for(CartItemView c: items){
+					for(CartItemView c: itemsOfCart){
 						
 						if(c.getItem().equals(itemId)){
 							
@@ -219,7 +224,9 @@ public class MediatorPortImpl implements MediatorPortType {
 					}
 				}
 				else{
-					
+					ItemView iV = new ItemView();
+					System.out.println("Nao existe lista\n");
+					System.out.println("Item ID: " + itemId.getProductId());
 					CartItemView cartItem = new CartItemView();
 					
 					iV.setItemId(itemId);
@@ -232,26 +239,25 @@ public class MediatorPortImpl implements MediatorPortType {
 					
 					cartItem.setQuantity(itemQty);
 					
-					items.add(cartItem);
+					itemsOfCart.add(cartItem);
 				}
 			}
 		}
 		if(cartExists(cartId) == false){
-			
+			System.out.println("Criou carro novo\n");
 			CartView carrinho = new CartView();
 			
-			carrinho.items = items;
+			carrinho.items = itemsOfCart;
 			
 			carrinho.setCartId(cartId);
 			
 			cartList.add(carrinho);
 		}
 		
-		if(getCart(cartId) != null){
-			
+		else{
+			System.out.println("Carro ja existente\n");
 			CartView carrinho = getCart(cartId);
-			
-			carrinho.items = items;
+			carrinho.items = itemsOfCart;
 		}
 	}
 	
@@ -341,22 +347,13 @@ public class MediatorPortImpl implements MediatorPortType {
 	}
 	
 	public String ping(String string){
-		
 		UDDINaming uddi = endpointManager.getUddiNaming();
-		
 		Collection<UDDIRecord> colec = listSuppliers();
 		
 		for (UDDIRecord record : colec ){
 			
-			try {
-				uddi.bind(record);
-				
-				System.out.println("Texto: " + record.getOrgName());
-				
-			} catch (UDDINamingException e) {
-				
-				e.printStackTrace();
-			}
+			System.out.println("Texto: " + record.getOrgName());
+			
 		}
 		return "Ok";
 	}
@@ -369,13 +366,29 @@ public class MediatorPortImpl implements MediatorPortType {
 	
 	@Override
 	public List<CartView> listCarts() {
-		// TODO Auto-generated method stub
-		return null;
+		return cartList;
 	}
 	
 	@Override
 	public List<ShoppingResultView> shopHistory() {
-		// TODO Auto-generated method stub
+		UDDINaming uddi = endpointManager.getUddiNaming();
+		Collection<UDDIRecord> colec = listSuppliers();
+		
+		SupplierClient supplier;
+		List<ShoppingResultView> purchases = new ArrayList<ShoppingResultView>();
+		List<PurchaseView> purchaseView = new ArrayList<PurchaseView>();
+		
+		for (UDDIRecord record : colec ){
+			try {
+				supplier = new SupplierClient(record.getUrl());
+				
+				purchaseView = supplier.listPurchases();
+				
+				
+			} catch (SupplierClientException e) {
+				e.printStackTrace();
+			}
+		}
 		return null;
 	}
 

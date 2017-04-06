@@ -1,5 +1,7 @@
 package org.komparator.supplier.ws.cli;
 
+import org.komparator.supplier.ws.ProductView;
+
 /** Main class that starts the Supplier Web Service client. */
 public class SupplierClientApp {
 
@@ -23,6 +25,7 @@ public class SupplierClientApp {
 		String result = client.ping("client");
 		System.out.print("Result: ");
 		System.out.println(result);
+
 	}
 
 }
