@@ -40,11 +40,11 @@ public class AddToCartIT extends BaseIT {
 		product3.setId("Alameda");
 		product3.setDesc("Torres ist");
 		product3.setPrice(10);
-		product3.setQuantity(1);
+		product3.setQuantity(5);
 		client.createProduct(product3);
 	}
 	
-	/*@Test
+	@Test
 	public void success() throws InvalidCartId_Exception, NotEnoughItems_Exception, InvalidQuantity_Exception, InvalidItemId_Exception{
 		ItemIdView itemId = new ItemIdView();
 		itemId.setProductId("Ze");
@@ -55,10 +55,10 @@ public class AddToCartIT extends BaseIT {
 		Assert.assertEquals("Ze", cart.getItems().get(0).getItem().getItemId().getProductId());
 		Assert.assertEquals("Piriquito", cart.getItems().get(0).getItem().getDesc());
 		Assert.assertEquals(1, cart.getItems().get(0).getQuantity());
-	}*/
+	}
 	
 	@Test
-	public void successExistentCart() throws InvalidCartId_Exception, NotEnoughItems_Exception, InvalidQuantity_Exception, InvalidItemId_Exception{
+	public void successSameListCart() throws InvalidCartId_Exception, NotEnoughItems_Exception, InvalidQuantity_Exception, InvalidItemId_Exception{
 		ItemIdView itemId1 = new ItemIdView();
 		itemId1.setProductId("Ze");
 		itemId1.setSupplierId("T21_Supplier1");
@@ -72,11 +72,31 @@ public class AddToCartIT extends BaseIT {
 		List<CartView> listCart = mediatorClient.listCarts();
 		CartView cart = listCart.get(0);
 		
-		Assert.assertEquals("Tagus", cart.getItems().get(0).getItem().getItemId().getProductId());
-		Assert.assertEquals("Ze", cart.getItems().get(1).getItem().getItemId().getProductId());
+		Assert.assertEquals("Tagus", cart.getItems().get(1).getItem().getItemId().getProductId());
+		Assert.assertEquals("Ze", cart.getItems().get(0).getItem().getItemId().getProductId());
 
 	}
-	/*
+	
+	@Test
+	public void successSameProduct() throws InvalidCartId_Exception, NotEnoughItems_Exception, InvalidQuantity_Exception, InvalidItemId_Exception{
+		ItemIdView itemId1 = new ItemIdView();
+		itemId1.setProductId("Alameda");
+		itemId1.setSupplierId("T21_Supplier1");
+		mediatorClient.addToCart("Intermarche", itemId1 , 1);
+		
+		ItemIdView itemId2 = new ItemIdView();
+		itemId2.setProductId("Alameda");
+		itemId2.setSupplierId("T21_Supplier1");
+		mediatorClient.addToCart("Intermarche", itemId2 , 2);
+		
+		List<CartView> listCart = mediatorClient.listCarts();
+		CartView cart = listCart.get(0);
+		
+		Assert.assertEquals("Alameda", cart.getItems().get(0).getItem().getItemId().getProductId());
+		Assert.assertEquals(3, cart.getItems().get(0).getQuantity());
+
+	}
+	
 	@Test(expected=InvalidCartId_Exception.class)
 	public void cartIdNull() throws InvalidCartId_Exception, NotEnoughItems_Exception, InvalidQuantity_Exception, InvalidItemId_Exception{
 		ItemIdView itemId = new ItemIdView();
@@ -107,6 +127,12 @@ public class AddToCartIT extends BaseIT {
 		itemId.setSupplierId("T21_Supplier1");
 		mediatorClient.addToCart("Pingo azedo",itemId , 2);
 		
-	}*/
+	}
+	
+	
+	@After
+	public void clean(){
+		mediatorClient.clear();
+	}
 	
 }

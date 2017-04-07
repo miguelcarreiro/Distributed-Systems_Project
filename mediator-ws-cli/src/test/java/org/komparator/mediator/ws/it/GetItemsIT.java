@@ -52,6 +52,9 @@ public class GetItemsIT extends BaseIT {
 	}
 	
 
-	
+	@After
+	public void clean(){
+		mediatorClient.clear();
+	}
 	
 }

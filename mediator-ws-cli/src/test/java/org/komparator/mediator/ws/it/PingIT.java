@@ -2,6 +2,7 @@ package org.komparator.mediator.ws.it;
 
 import static org.junit.Assert.assertNotNull;
 
+import org.junit.After;
 import org.junit.Test;
 
 
@@ -19,5 +20,10 @@ public class PingIT extends BaseIT {
     public void pingEmptyTest() {
         assertNotNull(mediatorClient.ping("test"));
     }
+    
+	@After
+	public void clean(){
+		mediatorClient.clear();
+	}
 
 }

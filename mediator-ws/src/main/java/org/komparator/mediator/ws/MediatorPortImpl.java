@@ -13,11 +13,13 @@ import org.komparator.supplier.ws.BadProductId;
 import org.komparator.supplier.ws.BadProductId_Exception;
 import org.komparator.supplier.ws.BadText;
 import org.komparator.supplier.ws.BadText_Exception;
+import org.komparator.supplier.ws.InsufficientQuantity_Exception;
 import org.komparator.supplier.ws.ProductView;
 import org.komparator.supplier.ws.PurchaseView;
 import org.komparator.supplier.ws.cli.SupplierClient;
 import org.komparator.supplier.ws.cli.SupplierClientException;
 
+import pt.ulisboa.tecnico.sdis.ws.cli.CreditCardClient;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDIRecord;
@@ -169,14 +171,16 @@ public class MediatorPortImpl implements MediatorPortType {
 	@Override
 	public void addToCart(String cartId, ItemIdView itemId, int itemQty) throws InvalidCartId_Exception,
 			InvalidItemId_Exception, InvalidQuantity_Exception, NotEnoughItems_Exception {
+		
 		System.out.println("Comecou addToCart\n");
+		
 		UDDINaming uddi = endpointManager.getUddiNaming();
 		
 		Collection<UDDIRecord> colec = listSuppliers();
 		
 		List<CartItemView> itemsOfCart = new ArrayList<CartItemView>();
 		
-		
+		boolean productInCart = false;
 		
 		if(cartId == null){
 			throwInvalidCartId("CartId cannot be null!");
@@ -190,8 +194,10 @@ public class MediatorPortImpl implements MediatorPortType {
 			throwInvalidQuantity("Quantity cannot be negative!");
 		}
 		for (UDDIRecord record : colec ){
-			 
+			 System.out.println("Este e o supplier " + record.getOrgName());
 			if(record.getOrgName().equals(itemId.getSupplierId())){
+				
+				System.out.println("Encontrei o supplier " + record.getOrgName());
 				
 				SupplierClient supplier;
 				
@@ -213,20 +219,25 @@ public class MediatorPortImpl implements MediatorPortType {
 					
 				} catch (BadProductId_Exception e) {}
 				
-				if (itemsOfCart.contains(itemId.getProductId())){
-					
-					for(CartItemView c: itemsOfCart){
+				if(getCart(cartId) != null){
+					CartView carro = getCart(cartId);
+					for(CartItemView c: carro.items){
 						
-						if(c.getItem().equals(itemId)){
-							
+						if(c.getItem().getItemId().getProductId().equals(itemId.getProductId())){
 							c.setQuantity( c.getQuantity() + itemQty) ;
+							productInCart = true;
+							System.out.println("Produto existe na lista do carro: " + itemId.getProductId());
 						}
 					}
 				}
-				else{
+				
+				
+				if(!productInCart){
 					ItemView iV = new ItemView();
-					System.out.println("Nao existe lista\n");
+					
+					System.out.println("Nao existe o item na lista, vou criar um!\n");
 					System.out.println("Item ID: " + itemId.getProductId());
+					
 					CartItemView cartItem = new CartItemView();
 					
 					iV.setItemId(itemId);
@@ -241,10 +252,11 @@ public class MediatorPortImpl implements MediatorPortType {
 					
 					itemsOfCart.add(cartItem);
 				}
+				productInCart = false;
 			}
 		}
 		if(cartExists(cartId) == false){
-			System.out.println("Criou carro novo\n");
+			System.out.println("Nao existe este carro, vou criar: " + cartId + "\n");
 			CartView carrinho = new CartView();
 			
 			carrinho.items = itemsOfCart;
@@ -255,9 +267,17 @@ public class MediatorPortImpl implements MediatorPortType {
 		}
 		
 		else{
-			System.out.println("Carro ja existente\n");
+			System.out.println("Carro ja existente, nao preciso de criar " + cartId + "\n");
 			CartView carrinho = getCart(cartId);
-			carrinho.items = itemsOfCart;
+			for(CartItemView i : itemsOfCart){
+				carrinho.items.add(i);
+			}
+			
+			for(CartItemView i : carrinho.items){
+				System.out.println("ID lista: " + i.getItem().getItemId().getProductId());
+				System.out.println("Desc lista: " + i.getItem().getDesc());
+			}
+			
 		}
 	}
 	
@@ -268,6 +288,11 @@ public class MediatorPortImpl implements MediatorPortType {
 		UDDINaming uddi = endpointManager.getUddiNaming();
 		
 		Collection<UDDIRecord> colec = listSuppliers();
+		try{
+			CreditCardClient creditCard = new CreditCardClient(creditCardNr);
+		}catch (InvalidCreditCard_Exception e){
+			throwInvalidCreditCard("Error creating credit card!");
+		}
 		
 		if(cartId == null){
 			
@@ -278,30 +303,36 @@ public class MediatorPortImpl implements MediatorPortType {
 			throwInvalidCreditCard("CreditCartNr cannot be null!");
 		}
 		
-		/*if(!CreditCardClient.validateNumber(creditCardNr)){
-			
-		}*/
-		/*
-		for (UDDIRecord record : colec ){
+		if(creditCard.validateNumber(creditCardNr)){
 		
-			SupplierClient supplier;
-			
-			for(CartView lista: cartList){
+			for (UDDIRecord record : colec ){
 				
-				if(lista.getCartId().equals(cartId)){
+				for(CartView lista: cartList){
 					
-					for()
-					
-					try 
-					{
-					} catch (SupplierClientException e) {
+					if(lista.getCartId().equals(cartId)){
 						
-						e.printStackTrace();
+						for(CartItemView items: lista.items){
+							
+							if(items.getItem().getItemId().getSupplierId().equals(record.getOrgName())){
+								try{
+								SupplierClient supplier = new SupplierClient(record.getUrl());
+								supplier.buyProduct(items.getItem().getItemId().getProductId(), items.getQuantity());
+								
+								} catch (InsufficientQuantity_Exception e) {
+									
+								} catch (Exception e){
+									
+								}
+							}
+						}
 					}
 				}
 			}
 		}
-		*/
+		else{
+			throwInvalidCreditCard("CreditCart payment refused!");
+		}
+		
 		
 		return null;
 	}
@@ -360,7 +391,19 @@ public class MediatorPortImpl implements MediatorPortType {
 
 	@Override
 	public void clear() {
-	
+		UDDINaming uddi = endpointManager.getUddiNaming();
+		Collection<UDDIRecord> colec = listSuppliers();
+		SupplierClient supplier;
+		cartList = new ArrayList<CartView>();
+		
+		for (UDDIRecord record : colec ){
+			try{	
+				supplier = new SupplierClient(record.getUrl());
+				supplier.clear();
+			} catch (Exception e){
+				
+			}
+		}
 	}
 
 	
