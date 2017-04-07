@@ -20,6 +20,7 @@ import org.komparator.supplier.ws.cli.SupplierClient;
 import org.komparator.supplier.ws.cli.SupplierClientException;
 
 import pt.ulisboa.tecnico.sdis.ws.cli.CreditCardClient;
+import pt.ulisboa.tecnico.sdis.ws.cli.CreditCardClientException;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDIRecord;
@@ -45,6 +46,8 @@ public class MediatorPortImpl implements MediatorPortType {
 	}
 		
 	private List<CartView> cartList = new ArrayList<CartView>();
+	
+	private static int idBuy = 0;
 
 	// Main operations -------------------------------------------------------
 	
@@ -75,7 +78,7 @@ public class MediatorPortImpl implements MediatorPortType {
 		int suppliers = 0;
 		
 		for (UDDIRecord record : colec ){
-			// retrieve product
+
 			SupplierClient supplier;
 			try {
 				supplier = new SupplierClient(record.getUrl());
@@ -84,11 +87,7 @@ public class MediatorPortImpl implements MediatorPortType {
 				
 				if (product != null) {
 					suppliers++;
-					System.out.println("Product ID: " + productId + "\n");
-					System.out.println("Supplier ID: " + record.getOrgName() + "\n");
-					System.out.println("Product description: " + product.getDesc() + "\n");
-					System.out.println("Product price: " + product.getPrice() + "\n");
-					System.out.println("Item ID: " + itemId + "\n");
+					
 					itemId.setProductId(productId);
 					
 					itemId.setSupplierId(record.getOrgName());
@@ -172,8 +171,6 @@ public class MediatorPortImpl implements MediatorPortType {
 	public void addToCart(String cartId, ItemIdView itemId, int itemQty) throws InvalidCartId_Exception,
 			InvalidItemId_Exception, InvalidQuantity_Exception, NotEnoughItems_Exception {
 		
-		System.out.println("Comecou addToCart\n");
-		
 		UDDINaming uddi = endpointManager.getUddiNaming();
 		
 		Collection<UDDIRecord> colec = listSuppliers();
@@ -194,10 +191,8 @@ public class MediatorPortImpl implements MediatorPortType {
 			throwInvalidQuantity("Quantity cannot be negative!");
 		}
 		for (UDDIRecord record : colec ){
-			 System.out.println("Este e o supplier " + record.getOrgName());
 			if(record.getOrgName().equals(itemId.getSupplierId())){
 				
-				System.out.println("Encontrei o supplier " + record.getOrgName());
 				
 				SupplierClient supplier;
 				
@@ -226,7 +221,6 @@ public class MediatorPortImpl implements MediatorPortType {
 						if(c.getItem().getItemId().getProductId().equals(itemId.getProductId())){
 							c.setQuantity( c.getQuantity() + itemQty) ;
 							productInCart = true;
-							System.out.println("Produto existe na lista do carro: " + itemId.getProductId());
 						}
 					}
 				}
@@ -234,9 +228,6 @@ public class MediatorPortImpl implements MediatorPortType {
 				
 				if(!productInCart){
 					ItemView iV = new ItemView();
-					
-					System.out.println("Nao existe o item na lista, vou criar um!\n");
-					System.out.println("Item ID: " + itemId.getProductId());
 					
 					CartItemView cartItem = new CartItemView();
 					
@@ -256,7 +247,6 @@ public class MediatorPortImpl implements MediatorPortType {
 			}
 		}
 		if(cartExists(cartId) == false){
-			System.out.println("Nao existe este carro, vou criar: " + cartId + "\n");
 			CartView carrinho = new CartView();
 			
 			carrinho.items = itemsOfCart;
@@ -267,15 +257,9 @@ public class MediatorPortImpl implements MediatorPortType {
 		}
 		
 		else{
-			System.out.println("Carro ja existente, nao preciso de criar " + cartId + "\n");
 			CartView carrinho = getCart(cartId);
 			for(CartItemView i : itemsOfCart){
 				carrinho.items.add(i);
-			}
-			
-			for(CartItemView i : carrinho.items){
-				System.out.println("ID lista: " + i.getItem().getItemId().getProductId());
-				System.out.println("Desc lista: " + i.getItem().getDesc());
 			}
 			
 		}
@@ -288,11 +272,10 @@ public class MediatorPortImpl implements MediatorPortType {
 		UDDINaming uddi = endpointManager.getUddiNaming();
 		
 		Collection<UDDIRecord> colec = listSuppliers();
-		try{
-			CreditCardClient creditCard = new CreditCardClient(creditCardNr);
-		}catch (InvalidCreditCard_Exception e){
-			throwInvalidCreditCard("Error creating credit card!");
-		}
+		List<CartItemView> purchases = new ArrayList<CartItemView>();
+		List<CartItemView> rejected = new ArrayList<CartItemView>();
+		ShoppingResultView shopping = new ShoppingResultView();
+		int totalPrice = 0;
 		
 		if(cartId == null){
 			
@@ -303,38 +286,74 @@ public class MediatorPortImpl implements MediatorPortType {
 			throwInvalidCreditCard("CreditCartNr cannot be null!");
 		}
 		
-		if(creditCard.validateNumber(creditCardNr)){
+		if(getCart(cartId) == null){
+			throwEmptyCart("Cart doesn't exist!");
+		}
 		
-			for (UDDIRecord record : colec ){
-				
-				for(CartView lista: cartList){
+		try{
+			CreditCardClient creditCard = new CreditCardClient("http://ws.sd.rnl.tecnico.ulisboa.pt:8080/cc");
+		
+			if(creditCard.validateNumber(creditCardNr)){
+			
+				for (UDDIRecord record : colec ){
 					
-					if(lista.getCartId().equals(cartId)){
+					for(CartView lista: cartList){
 						
-						for(CartItemView items: lista.items){
+						if(lista.getCartId().equals(cartId)){
 							
-							if(items.getItem().getItemId().getSupplierId().equals(record.getOrgName())){
-								try{
-								SupplierClient supplier = new SupplierClient(record.getUrl());
-								supplier.buyProduct(items.getItem().getItemId().getProductId(), items.getQuantity());
+							for(CartItemView items: lista.items){
 								
-								} catch (InsufficientQuantity_Exception e) {
+								if(items.getItem().getItemId().getSupplierId().equals(record.getOrgName())){
 									
-								} catch (Exception e){
-									
+									try{
+										SupplierClient supplier = new SupplierClient(record.getUrl());
+										supplier.buyProduct(items.getItem().getItemId().getProductId(), items.getQuantity());
+										purchases.add(items);
+										totalPrice += (items.getItem().getPrice())*(items.getQuantity());
+									} catch (InsufficientQuantity_Exception e) {
+										rejected.add(items);
+										
+									} catch (Exception e){	
+									}
 								}
 							}
 						}
 					}
 				}
 			}
-		}
-		else{
-			throwInvalidCreditCard("CreditCart payment refused!");
+			else{
+				throwInvalidCreditCard("CreditCart payment refused!");
+			}
+		} catch(InvalidCreditCard_Exception | CreditCardClientException e){
+				throwInvalidCreditCard("Error creating credit card!");
 		}
 		
+		Result result;
 		
-		return null;
+		if(purchases.size() == 0){
+			result = Result.EMPTY;
+		}
+		else if(rejected.size() == 0){
+			result = Result.COMPLETE;
+		}
+		else {
+			result = Result.PARTIAL;
+		}
+		
+		shopping.setResult(result);
+		shopping.setTotalPrice(totalPrice);
+		shopping.setId(Integer.toString(idBuy));
+		idBuy++;
+
+		if(purchases.size() > 0){
+			shopping.purchasedItems = purchases;
+			}
+		
+		else if(rejected.size() > 0){
+			shopping.droppedItems = rejected;
+		}
+		
+		return shopping;
 	}
 	// Auxiliary operations --------------------------------------------------	
 	
@@ -383,7 +402,7 @@ public class MediatorPortImpl implements MediatorPortType {
 		
 		for (UDDIRecord record : colec ){
 			
-			System.out.println("Texto: " + record.getOrgName());
+			System.out.println(record.getOrgName() + " OK");
 			
 		}
 		return "Ok";
@@ -395,6 +414,7 @@ public class MediatorPortImpl implements MediatorPortType {
 		Collection<UDDIRecord> colec = listSuppliers();
 		SupplierClient supplier;
 		cartList = new ArrayList<CartView>();
+		idBuy = 0;
 		
 		for (UDDIRecord record : colec ){
 			try{	
@@ -406,7 +426,6 @@ public class MediatorPortImpl implements MediatorPortType {
 		}
 	}
 
-	
 	@Override
 	public List<CartView> listCarts() {
 		return cartList;
@@ -416,7 +435,7 @@ public class MediatorPortImpl implements MediatorPortType {
 	public List<ShoppingResultView> shopHistory() {
 		UDDINaming uddi = endpointManager.getUddiNaming();
 		Collection<UDDIRecord> colec = listSuppliers();
-		
+
 		SupplierClient supplier;
 		List<ShoppingResultView> purchases = new ArrayList<ShoppingResultView>();
 		List<PurchaseView> purchaseView = new ArrayList<PurchaseView>();
@@ -438,7 +457,6 @@ public class MediatorPortImpl implements MediatorPortType {
 	
 	// View helpers -----------------------------------------------------
 	
-    // TODO
 
     
 	// Exception helpers -----------------------------------------------------
@@ -478,6 +496,12 @@ public class MediatorPortImpl implements MediatorPortType {
 		InvalidCreditCard faultInfo = new InvalidCreditCard();
 		faultInfo.message = message;
 		throw new InvalidCreditCard_Exception(message, faultInfo);
+	}
+	
+	private void throwEmptyCart(final String message) throws EmptyCart_Exception {
+		EmptyCart faultInfo = new EmptyCart();
+		faultInfo.message = message;
+		throw new EmptyCart_Exception(message, faultInfo);
 	}
 
 }

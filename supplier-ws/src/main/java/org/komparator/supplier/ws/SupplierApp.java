@@ -14,10 +14,7 @@ public class SupplierApp {
 		String uddiURL = null;
 		String wsName = null;
 		String wsURL = null;
-		
-		System.out.printf("OI " + args[0] + "\n");
 	
-		// Create server implementation object
 		SupplierEndpointManager endpoint = null;
 		
 		if (args.length == 1) {
