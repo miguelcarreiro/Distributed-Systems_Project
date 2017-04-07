@@ -224,8 +224,7 @@ public class MediatorPortImpl implements MediatorPortType {
 						}
 					}
 				}
-				
-				
+
 				if(!productInCart){
 					ItemView iV = new ItemView();
 					
