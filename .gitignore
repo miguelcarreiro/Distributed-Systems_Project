@@ -1,3 +1,7 @@
+# Test classes
+mediator-ws-cli_eval/
+supplier-ws-cli_eval/
+
 # Maven
 target/
 pom.xml.tag
