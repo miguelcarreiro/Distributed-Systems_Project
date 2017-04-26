@@ -129,9 +129,14 @@ public class MediatorPortImpl implements MediatorPortType {
 		UDDINaming uddi = endpointManager.getUddiNaming();
 		
 		Collection<UDDIRecord> colec = listSuppliers();
-			
+
+		List<ItemView> productList = new ArrayList<ItemView>();
 		
-		List<ItemView> productList= new ArrayList<ItemView>();
+		List<ItemView> productListOrdered = new ArrayList<ItemView>();
+		
+		ItemView lowestItem;
+		
+		boolean ordered = false;
 		
 		for (UDDIRecord record : colec){
 			 
@@ -161,7 +166,33 @@ public class MediatorPortImpl implements MediatorPortType {
 			} 
 		}
 		
-		return productList;
+		if(productList.size() < 2){
+			productListOrdered = productList;
+		}
+		else {
+			lowestItem = productList.get(0);
+			while(!ordered){
+				for (ItemView itemView : productList){
+					if (lowestItem.getItemId().getProductId().compareTo(itemView.getItemId().getProductId()) > 0){
+						lowestItem = itemView;
+					} else if(lowestItem.getItemId().getProductId().compareTo(itemView.getItemId().getProductId()) == 0){
+						if(lowestItem.getPrice() > (itemView.getPrice())){
+							lowestItem = itemView;
+						}
+					}
+				}
+				productListOrdered.add(lowestItem);
+				productList.remove(productList.indexOf(lowestItem));
+				if(productList.size() > 0){
+					lowestItem = productList.get(0);
+				} else{
+					ordered = true;
+				}
+				
+			}
+		}
+
+		return productListOrdered;
 	}
 	
 	@Override
