@@ -1,5 +1,6 @@
 package org.komparator.supplier.ws;
 
+import org.komparator.security.handler.SupplierSecurityHandler;
 
 /** Main class that starts the Supplier Web Service. */
 public class SupplierApp {
@@ -17,6 +18,8 @@ public class SupplierApp {
 	
 		SupplierEndpointManager endpoint = null;
 		
+		
+		
 		if (args.length == 1) {
 			wsURL = args[0];
 			endpoint = new SupplierEndpointManager(wsURL);
@@ -27,6 +30,7 @@ public class SupplierApp {
 			wsURL = args[2];
 			endpoint = new SupplierEndpointManager(uddiURL, wsName, wsURL);
 			endpoint.setVerbose(true);
+			SupplierSecurityHandler.senderName = wsName;
 		}
 
 		try {

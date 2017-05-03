@@ -1,6 +1,6 @@
 package org.komparator.supplier.ws.cli;
 
-import org.komparator.supplier.ws.ProductView;
+import org.komparator.security.handler.SupplierSecurityHandler;
 
 /** Main class that starts the Supplier Web Service client. */
 public class SupplierClientApp {
@@ -20,7 +20,7 @@ public class SupplierClientApp {
 
 		// the following remote invocations are just basic examples
 		// the actual tests are made using JUnit
-
+		SupplierSecurityHandler.senderName = "T21_Mediator";
 		System.out.println("Invoke ping()...");
 		String result = client.ping("client");
 		System.out.print("Result: ");

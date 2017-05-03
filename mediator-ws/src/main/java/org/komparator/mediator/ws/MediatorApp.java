@@ -1,5 +1,7 @@
 package org.komparator.mediator.ws;
 
+import org.komparator.security.handler.SupplierSecurityHandler;
+
 public class MediatorApp {
 
 	public static void main(String[] args) throws Exception {
@@ -24,6 +26,7 @@ public class MediatorApp {
 			wsURL = args[2];
 			endpoint = new MediatorEndpointManager(uddiURL, wsName, wsURL);
 			endpoint.setVerbose(true);
+			SupplierSecurityHandler.senderName = wsName;
 		}
 
 		try {
