@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import javax.jws.HandlerChain;
 import javax.jws.WebService;
 
 import org.komparator.mediator.ws.MediatorPortType;
@@ -35,7 +36,7 @@ import pt.ulisboa.tecnico.sdis.ws.uddi.UDDIRecord;
 		targetNamespace = "http://ws.mediator.komparator.org/", 
 		serviceName = "MediatorService"
 		)
-
+@HandlerChain(file = "mediator-ws_handler-chain.xml")
 public class MediatorPortImpl implements MediatorPortType {
 
 	// end point manager
@@ -48,6 +49,7 @@ public class MediatorPortImpl implements MediatorPortType {
 	private List<CartView> cartList = new ArrayList<CartView>();
 	
 	private static int idBuy = 0;
+	
 
 	// Main operations -------------------------------------------------------
 	
@@ -450,13 +452,20 @@ public class MediatorPortImpl implements MediatorPortType {
 	public String ping(String string){
 		UDDINaming uddi = endpointManager.getUddiNaming();
 		Collection<UDDIRecord> colec = listSuppliers();
+		String result = "";
 		
 		for (UDDIRecord record : colec ){
-			
-			System.out.println(record.getOrgName() + " OK");
-			
+			try{
+				SupplierClient supplier = new SupplierClient(record.getUrl());
+				String pingResponse = supplier.ping(string);
+				result += record.getOrgName() + " OK: " + pingResponse + "\n";
+				
+			} catch (Exception e){
+				System.out.println(record.getOrgName() + "not OK: Please check!");
+			}
 		}
-		return "Ok";
+		System.out.println(result);
+		return "Ping with mediator and all registered suppliers done";
 	}
 
 	@Override

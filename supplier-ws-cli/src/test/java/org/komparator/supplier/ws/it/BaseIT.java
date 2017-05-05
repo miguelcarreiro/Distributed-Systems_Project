@@ -6,6 +6,7 @@ import java.util.Properties;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.komparator.supplier.ws.cli.SupplierClient;
+import org.komparator.security.handler.SupplierSecurityHandler;
 
 public class BaseIT {
 
@@ -19,6 +20,7 @@ public class BaseIT {
 		testProps = new Properties();
 		try {
 			testProps.load(BaseIT.class.getResourceAsStream(TEST_PROP_FILE));
+			SupplierSecurityHandler.senderName = "T21_Mediator";
 			System.out.println("Loaded test properties:");
 			System.out.println(testProps);
 		} catch (IOException e) {

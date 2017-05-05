@@ -6,6 +6,7 @@ import java.util.TreeSet;
 import java.util.Date;
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
@@ -89,10 +90,6 @@ public class SupplierSecurityHandler implements SOAPHandler<SOAPMessageContext> 
 				messageDigest.update(msgBytes);
 				byte[] digest = messageDigest.digest();
 				String digestString = printBase64Binary(digest);
-				
-				System.out.print("Digest: ");
-				System.out.println(digestString);
-
 				FileInputStream is_private = new FileInputStream("src/main/resources/"+ senderName + ".jks");
 				
 				KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -110,9 +107,6 @@ public class SupplierSecurityHandler implements SOAPHandler<SOAPMessageContext> 
 				
 				String sigString = printBase64Binary(signature);
 				
-				System.out.print("Signature: ");
-				System.out.println(sigString);
-				
 				// add header
 				SOAPHeader sh = se.getHeader();
 				if (sh == null)
@@ -125,6 +119,13 @@ public class SupplierSecurityHandler implements SOAPHandler<SOAPMessageContext> 
 
 				// add header element value
 				element.addTextNode(sigString);
+				
+				try {
+					if (is_private != null)
+						is_private.close();
+				} catch (IOException e) {
+					// ignore
+				}
 
 			} else {
 				System.out.println("Reading header in inbound SOAP message...");
@@ -158,13 +159,11 @@ public class SupplierSecurityHandler implements SOAPHandler<SOAPMessageContext> 
 				
 				CAClient ca = new CAClient("http://sec.sd.rnl.tecnico.ulisboa.pt:8081/ca?WSDL");
 				String certString = ca.getCertificate(senderName.toLowerCase());
+				
 				byte[] bytes = certString.getBytes(StandardCharsets.UTF_8);
 				InputStream in = new ByteArrayInputStream(bytes);
 				CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
 				Certificate cert = certFactory.generateCertificate(in);
-
-
-				// get header element value
 				
 				String encryptString = element.getValue();
 				byte[] encryptByte = parseBase64Binary(encryptString);
@@ -184,9 +183,13 @@ public class SupplierSecurityHandler implements SOAPHandler<SOAPMessageContext> 
 					throw new RuntimeException();
 				}
 				
+		
+				if (in != null)
+					in.close();
 			}
 		} catch (RuntimeException e){
 			throw new RuntimeException();
+		} catch (IOException e){
 		} catch (Exception e) {
 			System.out.print("Caught exception in handleMessage: ");
 			System.out.println(e);

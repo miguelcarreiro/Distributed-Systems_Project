@@ -2,6 +2,7 @@ package org.komparator.security;
 
 import java.io.*;
 import java.security.*;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 
 import javax.crypto.*;
@@ -15,8 +16,10 @@ import static javax.xml.bind.DatatypeConverter.printBase64Binary;
 
 public class CryptoUtilTest {
 
-    Key private_key;
-    Key public_key;
+    PrivateKey privatekey;
+    PublicKey publickey;
+
+    CryptoUtil crypto;
 
     // one-time initialization and clean-up
     @BeforeClass
@@ -34,23 +37,20 @@ public class CryptoUtilTest {
     // initialization and clean-up for each test
     @Before
     public void setUp() throws Exception{
-       /* FileInputStream is_private = new FileInputStream("private_key.jks");
-        FileInputStream is_public = new FileInputStream("public_key.cer");
+        FileInputStream is_private = new FileInputStream("src/test/resources/private_key.jks");
+        FileInputStream is_public = new FileInputStream("src/test/resources/public_key.cer");
         
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
         keystore.load(is_private, "1nsecure".toCharArray());
-        String alias = "alias_private";
-        private_key = keystore.getKey(alias, "ins3cur3".toCharArray());
+        String alias = "example";
+        Key key = keystore.getKey(alias, "ins3cur3".toCharArray());
+     	privatekey = (PrivateKey) key;
         
-        CAClient cac = new CAClient("url");
-        String textcertificate = cac.getCertificate("Txx_Mediator");
-        Certificate cert = 
-        
-        
-        CertificateFactory cf = CertificateFactory.getInstance("X.509");
-        java.security.cert.Certificate public_cert = cf.generateCertificate(is_public);*/
-        
-       
+        CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+		Certificate cert = certFactory.generateCertificate(is_public);
+		
+		publickey = cert.getPublicKey();
+		crypto = new CryptoUtil();
     }
 
     @After
@@ -61,15 +61,18 @@ public class CryptoUtilTest {
     // tests
     @Test
     public void testEncryptAndDecrypt() {
-    	/*String toEncrypt = "Mensagem de teste";
+    	String toEncrypt = "Mensagem1234";
+   
     	
-    	byte[] bytesToEncrypt = toEncrypt.getBytes();
-    	byte[] encryptedBytes = asymCipher(bytesToEncrypt, private_key);*/
+    	byte[] bytesToEncrypt = parseBase64Binary(toEncrypt);
+    	byte[] encryptedBytes = crypto.asymCipher(bytesToEncrypt, privatekey);
+    	Assert.assertNotNull(encryptedBytes);
+    	byte[] decryptedBytes = crypto.asymDecipher(encryptedBytes, publickey);
+    	Assert.assertNotNull(decryptedBytes);
+    	String decryptedString = printBase64Binary(decryptedBytes);
+    	System.out.println("Original: " + toEncrypt + " | Resultado: " + decryptedString);
+    	Assert.assertEquals(toEncrypt, decryptedString);
     	
-        // do something ...
-
-        // assertEquals(expected, actual);
-        // if the assert fails, the test fails
     }
 
 }

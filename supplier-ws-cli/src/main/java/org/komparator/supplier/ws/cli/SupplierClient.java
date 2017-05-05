@@ -7,6 +7,7 @@ import java.util.Map;
 
 import javax.xml.ws.BindingProvider;
 
+import org.komparator.security.handler.SupplierSecurityHandler;
 import org.komparator.supplier.ws.*;
 
 /**
@@ -45,6 +46,7 @@ public class SupplierClient implements SupplierPortType {
 	public SupplierClient(String wsURL) throws SupplierClientException {
 		this.wsURL = wsURL;
 		createStub();
+		SupplierSecurityHandler.senderName = "T21_Mediator";
 	}
 
 	/** Stub creation and configuration */

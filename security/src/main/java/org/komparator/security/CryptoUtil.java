@@ -14,7 +14,7 @@ public class CryptoUtil {
 			byte[] cipherBytes = cipher.doFinal(plainBytes);
 			return cipherBytes;
 		} catch (Exception e){
-			
+			e.printStackTrace();
 		}
 		return null;
 	}

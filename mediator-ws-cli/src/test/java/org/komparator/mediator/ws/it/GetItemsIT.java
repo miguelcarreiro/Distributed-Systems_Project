@@ -34,9 +34,10 @@ public class GetItemsIT extends BaseIT {
 		Assert.assertEquals(7, productList.get(0).getPrice());
 	}
 	
-	@Test(expected = InvalidItemId_Exception.class)
+	@Test
 	public void wrongId() throws InvalidItemId_Exception{
 		List<ItemView>productList = mediatorClient.getItems("Joao");
+		Assert.assertEquals(0, productList.size());
 	}
 	
 	@Test(expected = InvalidItemId_Exception.class)
