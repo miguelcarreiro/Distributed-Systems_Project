@@ -22,8 +22,17 @@
 
         <mainclass>org.komparator.mediator.ws.cli.MediatorClientApp</mainclass>
 
-        <ws.name>T21_Mediator</ws.name>
+        <group.id>T21</group.id>
+
+        <uddi.enabled>true</uddi.enabled>
         <uddi.url>http://t21:nondij9M@uddi.sd.rnl.tecnico.ulisboa.pt:9090</uddi.url>
+
+        <ws.name>${group.id}_Mediator</ws.name>
+        <ws.url>http://localhost:8080/mediator-ws/endpoint</ws.url>
+        
+        <supplier.ws.name>${group.id}_Supplier</supplier.ws.name>
+        <!-- The url below contains a placeholder ($i) that will be replaced in run-time -->
+        <supplier.ws.url>http://localhost:808$i/supplier-ws/endpoint</supplier.ws.url>
     </properties>
 
     <dependencies>
@@ -39,6 +48,13 @@
             <artifactId>uddi-naming</artifactId>
             <version>1.2</version>
         </dependency>
+        <!-- JMockit - must appear before JUnit -->
+        <dependency>
+            <groupId>org.jmockit</groupId>
+            <artifactId>jmockit</artifactId>
+            <version>1.21</version>
+            <scope>test</scope>
+        </dependency>
         <!-- JUnit -->
         <dependency>
             <groupId>junit</groupId>
@@ -46,11 +62,12 @@
             <version>4.12</version>
             <scope>test</scope>
         </dependency>
+        <!-- Supplier Client -->
         <dependency>
-            <groupId>org.komparator.T21</groupId>
-            <artifactId>supplier-ws-cli</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <scope>test</scope>
+        	<groupId>org.komparator.T21</groupId>
+        	<artifactId>supplier-ws-cli</artifactId>
+        	<version>1.0-SNAPSHOT</version>
+        	<scope>test</scope>
         </dependency>
         <!-- Security -->
         <dependency>
