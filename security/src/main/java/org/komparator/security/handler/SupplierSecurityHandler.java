@@ -9,20 +9,26 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-
+import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.Provider.Service;
+import java.security.PublicKey;
 import java.security.Security;
 import java.security.Signature;
+import java.security.SignatureException;
 import java.security.cert.CertificateFactory;
 import java.text.SimpleDateFormat;
 
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+
 import javax.xml.namespace.QName;
 import javax.xml.soap.Name;
 import javax.xml.soap.SOAPElement;
@@ -52,7 +58,9 @@ public class SupplierSecurityHandler implements SOAPHandler<SOAPMessageContext> 
 	
 	public static final String CONTEXT_PROPERTY = "my.property";
 
-
+	/** print some error messages to standard error. */
+	public static boolean outputFlag = true;
+	
 	//
 	// Handler interface implementation
 	//
@@ -165,25 +173,38 @@ public class SupplierSecurityHandler implements SOAPHandler<SOAPMessageContext> 
 				CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
 				Certificate cert = certFactory.generateCertificate(in);
 				
-				String encryptString = element.getValue();
-				byte[] encryptByte = parseBase64Binary(encryptString);
-				CryptoUtil crypto = new CryptoUtil();
-				byte[] decryptByte = crypto.asymDecipher(encryptByte, cert.getPublicKey());
+				//verificacao se o certificado e valido
 				
+				FileInputStream is_ca = new FileInputStream("src/main/resources/ca.cer");
 				
+				CertificateFactory caFactory = CertificateFactory.getInstance("X.509");
+				Certificate ca_cer = certFactory.generateCertificate(is_ca);
 				
-				// create digest
-				byte[] msgBytes = msg.toString().getBytes();
-				MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
-				messageDigest.update(msgBytes);
-				byte[] digest = messageDigest.digest();
-				String digestString = printBase64Binary(digest);
+				if((verifySignedCertificate(cert, ca_cer.getPublicKey()))){
 				
-				if(!digest.equals(decryptByte)){
-					throw new RuntimeException();
+					String encryptString = element.getValue();
+					byte[] encryptByte = parseBase64Binary(encryptString);
+					CryptoUtil crypto = new CryptoUtil();
+					byte[] decryptByte = crypto.asymDecipher(encryptByte, cert.getPublicKey());
+					
+					// create digest
+					byte[] msgBytes = msg.toString().getBytes();
+					MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
+					messageDigest.update(msgBytes);
+					byte[] digest = messageDigest.digest();
+					String digestString = printBase64Binary(digest);
+					
+					if(!digest.equals(decryptByte)){
+						throw new RuntimeException();
+					}
+				
 				}
 				
-		
+				else{
+					throw new RuntimeException();
+					
+				}
+				
 				if (in != null)
 					in.close();
 			}
@@ -217,5 +238,18 @@ public class SupplierSecurityHandler implements SOAPHandler<SOAPMessageContext> 
 	public void close(MessageContext messageContext) {
 		// nothing to clean up
 	}
-
+	
+	public static boolean verifySignedCertificate(Certificate certificate, PublicKey caPublicKey) {
+		try {
+			certificate.verify(caPublicKey);
+		} catch (InvalidKeyException | CertificateException | NoSuchAlgorithmException | NoSuchProviderException
+				| SignatureException e) {
+			if (outputFlag) {
+				System.err.println("Caught exception while verifying certificate with CA public key : " + e);
+				System.err.println("Returning false.");
+			}
+			return false;
+		}
+		return true;
+	}
 }
