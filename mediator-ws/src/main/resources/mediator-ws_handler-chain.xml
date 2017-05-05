@@ -3,7 +3,9 @@
         <handler>
             <handler-class>org.komparator.security.handler.LoggingHandler</handler-class>
         </handler>
-
+        <handler>
+            <handler-class>org.komparator.security.handler.MediatorServerSecurityHandler</handler-class>
+        </handler>
         <handler>
             <handler-class>org.komparator.security.handler.LoggingHandler</handler-class>
         </handler>
