@@ -10,20 +10,25 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-
+import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Provider;
+import java.security.PublicKey;
 import java.security.Provider.Service;
 import java.security.Security;
 import java.security.Signature;
+import java.security.SignatureException;
 import java.security.cert.CertificateFactory;
 import java.text.SimpleDateFormat;
 
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 
 import javax.crypto.Cipher;
 import javax.xml.namespace.QName;
@@ -54,10 +59,11 @@ import static javax.xml.bind.DatatypeConverter.printBase64Binary;
  *
  */
 public class MediatorClientSecurityHandler implements SOAPHandler<SOAPMessageContext> {
-
-
 	
 	public static final String CONTEXT_PROPERTY = "my.property";
+	
+	/** print some error messages to standard error. */
+	public static boolean outputFlag = true;
 
 
 	//
@@ -101,36 +107,37 @@ public class MediatorClientSecurityHandler implements SOAPHandler<SOAPMessageCon
 						if (argument.getNodeName().equals("creditCardNr")) {
 							
 							String secretArgument = argument.getTextContent();
-							System.out.println("----------Atributo------");
-							System.out.println(secretArgument);
-							System.out.println("----------Fim Atributo------");
 							
 							CAClient ca = new CAClient("http://sec.sd.rnl.tecnico.ulisboa.pt:8081/ca?WSDL");
-							String certString = ca.getCertificate("t21_mediator");
-							System.out.println("----------Certificado obtido------ > " + certString);
-							
+							String certString = ca.getCertificate("T21_Mediator");
 							byte[] bytes = certString.getBytes(StandardCharsets.UTF_8);
 							CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-							System.out.println("----------Instancia da fabrica de certificados obtido------");
 							
 							InputStream in = new ByteArrayInputStream(bytes);
 							Certificate cert = certFactory.generateCertificate(in);
 							if (in != null){
 								in.close();
 							}
-							System.out.println("----------Certificados gerado------");
+							//verificacao se o certificado e valido
 							
-							byte[] decryptByte = parseBase64Binary(secretArgument);
-							CryptoUtil crypto = new CryptoUtil();
-							byte[] encryptByte = crypto.asymCipher(decryptByte, cert.getPublicKey());
-							String encodedSecretArgument = printBase64Binary(encryptByte);
+							FileInputStream in_ca = new FileInputStream("src/main/resources/ca.cer");
 							
-							System.out.println("----------Encriptado------");
-							System.out.println(encodedSecretArgument);
-							System.out.println("----------Fim Encriptado------");
+							CertificateFactory caFactory = CertificateFactory.getInstance("X.509");
+							Certificate ca_cer = certFactory.generateCertificate(in_ca);
 							
-							argument.setTextContent(encodedSecretArgument);
-							msg.saveChanges();
+							if (in_ca != null){
+								in_ca.close();
+							}
+							
+							if((verifySignedCertificate(cert, ca_cer.getPublicKey()))){
+								byte[] decryptByte = parseBase64Binary(secretArgument);
+								CryptoUtil crypto = new CryptoUtil();
+								byte[] encryptByte = crypto.asymCipher(decryptByte, cert.getPublicKey());
+								String encodedSecretArgument = printBase64Binary(encryptByte);
+								
+								argument.setTextContent(encodedSecretArgument);
+								msg.saveChanges();
+							}
 							
 						}
 				}
@@ -166,5 +173,18 @@ public class MediatorClientSecurityHandler implements SOAPHandler<SOAPMessageCon
 	public void close(MessageContext messageContext) {
 		// nothing to clean up
 	}
-
+	
+	public static boolean verifySignedCertificate(Certificate certificate, PublicKey caPublicKey) {
+		try {
+			certificate.verify(caPublicKey);
+		} catch (InvalidKeyException | CertificateException | NoSuchAlgorithmException | NoSuchProviderException
+				| SignatureException e) {
+			if (outputFlag) {
+				System.err.println("Caught exception while verifying certificate with CA public key : " + e);
+				System.err.println("Returning false.");
+			}
+			return false;
+		}
+		return true;
+	}
 }

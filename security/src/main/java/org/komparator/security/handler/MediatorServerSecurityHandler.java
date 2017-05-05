@@ -9,20 +9,26 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-
+import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Provider;
+import java.security.PublicKey;
 import java.security.Provider.Service;
 import java.security.Security;
 import java.security.Signature;
+import java.security.SignatureException;
 import java.security.cert.CertificateFactory;
 import java.text.SimpleDateFormat;
 
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+
 import javax.xml.namespace.QName;
 import javax.xml.soap.Name;
 import javax.xml.soap.SOAPBody;
@@ -55,6 +61,9 @@ public class MediatorServerSecurityHandler implements SOAPHandler<SOAPMessageCon
 	public static String senderName = "SENDER";
 	
 	public static final String CONTEXT_PROPERTY = "my.property";
+	
+	/** print some error messages to standard error. */
+	public static boolean outputFlag = true;
 
 
 	//
@@ -98,9 +107,6 @@ public class MediatorServerSecurityHandler implements SOAPHandler<SOAPMessageCon
 						if (argument.getNodeName().equals("creditCardNr")) {
 							
 							String encryptedArgument = argument.getTextContent();
-							System.out.println("----------Atributo enc------");
-							System.out.println(encryptedArgument);
-							System.out.println("----------Fim Atributo enc------");
 							
 							FileInputStream is_private = new FileInputStream("src/main/resources/T21_Mediator.jks");
 							
@@ -115,23 +121,16 @@ public class MediatorServerSecurityHandler implements SOAPHandler<SOAPMessageCon
 							if (is_private != null){
 								is_private.close();
 							}
-							System.out.println("----------Certificados gerado------");
 							
 							byte[] encryptedByte = parseBase64Binary(encryptedArgument);
 							CryptoUtil crypto = new CryptoUtil();
 							byte[] decryptedByte = crypto.asymDecipher(encryptedByte, privateKey);
 							String decodedSecretArgument = printBase64Binary(decryptedByte);
 							
-							System.out.println("----------Encriptado------");
-							System.out.println(decodedSecretArgument);
-							System.out.println("----------Fim Encriptado------");
-							
 							argument.setTextContent(decodedSecretArgument);
 							msg.saveChanges();
-							
 						}
 				}
-
 			} else {}
 		} catch (RuntimeException e){
 			throw new RuntimeException();
@@ -163,5 +162,18 @@ public class MediatorServerSecurityHandler implements SOAPHandler<SOAPMessageCon
 	public void close(MessageContext messageContext) {
 		// nothing to clean up
 	}
-
+	
+	public static boolean verifySignedCertificate(Certificate certificate, PublicKey caPublicKey) {
+		try {
+			certificate.verify(caPublicKey);
+		} catch (InvalidKeyException | CertificateException | NoSuchAlgorithmException | NoSuchProviderException
+				| SignatureException e) {
+			if (outputFlag) {
+				System.err.println("Caught exception while verifying certificate with CA public key : " + e);
+				System.err.println("Returning false.");
+			}
+			return false;
+		}
+		return true;
+	}
 }

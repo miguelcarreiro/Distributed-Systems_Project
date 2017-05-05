@@ -175,10 +175,14 @@ public class SupplierSecurityHandler implements SOAPHandler<SOAPMessageContext> 
 				
 				//verificacao se o certificado e valido
 				
-				FileInputStream is_ca = new FileInputStream("src/main/resources/ca.cer");
+				FileInputStream in_ca = new FileInputStream("src/main/resources/ca.cer");
 				
 				CertificateFactory caFactory = CertificateFactory.getInstance("X.509");
-				Certificate ca_cer = certFactory.generateCertificate(is_ca);
+				Certificate ca_cer = certFactory.generateCertificate(in_ca);
+
+				if (in_ca != null){
+					in_ca.close();
+				}
 				
 				if((verifySignedCertificate(cert, ca_cer.getPublicKey()))){
 				
