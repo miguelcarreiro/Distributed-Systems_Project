@@ -1,5 +1,7 @@
 package org.komparator.mediator.ws;
 
+import java.util.Timer;
+
 import org.komparator.security.handler.SupplierSecurityHandler;
 
 public class MediatorApp {
@@ -31,7 +33,9 @@ public class MediatorApp {
 
 		try {
 			endpoint.start();
+			
 			endpoint.awaitConnections();
+			
 		} finally {
 			endpoint.stop();
 		}

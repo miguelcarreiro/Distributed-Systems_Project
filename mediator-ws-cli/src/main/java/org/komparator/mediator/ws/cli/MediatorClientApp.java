@@ -38,6 +38,7 @@ public class MediatorClientApp {
         System.out.println("Invoke ping()...");
         String result = client.ping("Mediator_client");
         System.out.println(result);
+        client.imAlive();
 
     }
 }

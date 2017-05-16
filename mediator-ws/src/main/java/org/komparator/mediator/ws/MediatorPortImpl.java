@@ -1,15 +1,19 @@
 package org.komparator.mediator.ws;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.Timer;
 
 import javax.jws.HandlerChain;
 import javax.jws.WebService;
 
 import org.komparator.mediator.ws.MediatorPortType;
-
+import org.komparator.mediator.ws.cli.MediatorClient;
+import org.komparator.mediator.ws.MediatorEndpointManager.Type;
 import org.komparator.supplier.ws.BadProductId;
 import org.komparator.supplier.ws.BadProductId_Exception;
 import org.komparator.supplier.ws.BadText;
@@ -44,15 +48,24 @@ public class MediatorPortImpl implements MediatorPortType {
 
 	public MediatorPortImpl(MediatorEndpointManager endpointManager) {
 		this.endpointManager = endpointManager;
+		
 	}
 		
 	private List<CartView> cartList = new ArrayList<CartView>();
 	
+	private List<ShoppingResultView> shopHistoryList = new ArrayList<ShoppingResultView>();
+	
 	private static int idBuy = 0;
+	
+	private long actualDate;
 	
 
 	// Main operations -------------------------------------------------------
 	
+	public long getActualDate(){
+		return actualDate;
+	}
+
 	@Override
 	public List<ItemView> getItems(String productId) throws InvalidItemId_Exception {
 		
@@ -316,6 +329,22 @@ public class MediatorPortImpl implements MediatorPortType {
 			}
 			
 		}
+		// update cart secondary mediator
+		String wsURL = endpointManager.getWsURL();
+		int index = wsURL.indexOf("8");
+		if(wsURL.length() > index + 4){
+			String strPort = wsURL.substring(index+3, index+4);
+			int port = Integer.parseInt(strPort);
+			port = (port % 2) + 1;
+			wsURL = wsURL.substring(0, index + 3) + port + wsURL.substring(index + 4);
+		
+			try{
+				MediatorClient mediatorClient = new MediatorClient(wsURL);
+				mediatorClient.updateCart(getCart(cartId));
+			} catch (Exception e){
+				
+			}
+		}
 	}
 	
 	@Override
@@ -406,6 +435,23 @@ public class MediatorPortImpl implements MediatorPortType {
 			shopping.droppedItems = rejected;
 		}
 		
+		shopHistoryList.add(0, shopping);
+		// update cart secondary mediator
+				String wsURL = endpointManager.getWsURL();
+				int index = wsURL.indexOf("8");
+				if(wsURL.length() > index + 4){
+					String strPort = wsURL.substring(index+3, index+4);
+					int port = Integer.parseInt(strPort);
+					port = (port % 2) + 1;
+					wsURL = wsURL.substring(0, index + 3) + port + wsURL.substring(index + 4);
+				
+					try{
+						MediatorClient mediatorClient = new MediatorClient(wsURL);
+						mediatorClient.updateShopHistory(shopping);
+					} catch (Exception e){
+						
+					}
+				}
 		return shopping;
 	}
 	// Auxiliary operations --------------------------------------------------	
@@ -493,25 +539,34 @@ public class MediatorPortImpl implements MediatorPortType {
 	
 	@Override
 	public List<ShoppingResultView> shopHistory() {
-		UDDINaming uddi = endpointManager.getUddiNaming();
-		Collection<UDDIRecord> colec = listSuppliers();
-
-		SupplierClient supplier;
-		List<ShoppingResultView> purchases = new ArrayList<ShoppingResultView>();
-		List<PurchaseView> purchaseView = new ArrayList<PurchaseView>();
-		
-		for (UDDIRecord record : colec ){
-			try {
-				supplier = new SupplierClient(record.getUrl());
-				
-				purchaseView = supplier.listPurchases();
-				
-				
-			} catch (SupplierClientException e) {
-				e.printStackTrace();
+		return shopHistoryList;
+	}
+	
+	@Override
+	public void imAlive() {
+		System.out.println("Imalive:");
+		if(endpointManager.type.equals(Type.PRIMARY)){
+			System.out.println("Type: " + endpointManager.type.toString());
+		} else {
+			Date date = new Date();
+			actualDate = date.getTime();
+		}
+	}
+	
+	@Override
+	public void updateCart(CartView cart){
+		for(CartView cartView : cartList){
+			if(cartView.getCartId().equals(cart.getCartId())){
+				cartList.remove(cartView);
+				break;
 			}
 		}
-		return null;
+		cartList.add(cart);
+	}
+	
+	@Override
+	public void updateShopHistory(ShoppingResultView shopping){
+		shopHistoryList.add(0, shopping);
 	}
 
 	

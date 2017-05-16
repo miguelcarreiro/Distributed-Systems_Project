@@ -2,10 +2,14 @@ package org.komparator.mediator.ws.cli;
 
 import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.xml.ws.BindingProvider;
 import org.komparator.mediator.ws.*;
+
+import com.oracle.webservices.api.message.ReadOnlyPropertyException;
+
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 
 
@@ -149,6 +153,37 @@ public class MediatorClient implements MediatorPortType {
 	@Override
 	public List<ShoppingResultView> shopHistory() {
 		return port.shopHistory();
+	}
+	
+	@Override
+	public void imAlive() {
+		 BindingProvider bindingProvider = (BindingProvider) port;
+         Map<String, Object> requestContext = bindingProvider
+                 .getRequestContext();
+         requestContext.put(ENDPOINT_ADDRESS_PROPERTY, wsURL);
+         int connectionTimeout = 5000;
+         final List<String> CONN_TIME_PROPS = new ArrayList<String>();
+         CONN_TIME_PROPS.add("com.sun.xml.ws.connect.timeout");
+         CONN_TIME_PROPS.add("com.sun.xml.internal.ws.connect.timeout");
+         CONN_TIME_PROPS.add("javax.xml.ws.client.connectionTimeout");
+
+         for (String propName : CONN_TIME_PROPS)
+             requestContext.put(propName, connectionTimeout);
+         System.out.printf("Set connection timeout to %d milliseconds%n", connectionTimeout);
+		 
+         port.imAlive();
+	}
+
+	@Override
+	public void updateCart(CartView cart) {
+		port.updateCart(cart);
+		
+	}
+
+	@Override
+	public void updateShopHistory(ShoppingResultView shopping) {
+		port.updateShopHistory(shopping);
+		
 	}
  
 }

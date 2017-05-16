@@ -1,12 +1,16 @@
 package org.komparator.mediator.ws;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Timer;
 
 import javax.xml.ws.Endpoint;
 
 import org.komparator.security.handler.SupplierSecurityHandler;
 
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
+import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
+import pt.ulisboa.tecnico.sdis.ws.uddi.UDDIRecord;
 
 /** End point manager */
 public class MediatorEndpointManager {
@@ -20,13 +24,21 @@ public class MediatorEndpointManager {
 	public String getWsName() {
 		return wsName;
 	}
+	
+	public static enum Type {
+		PRIMARY, SECONDARY;
+	}
+	
+	Type type;
+	
+	private Timer timer;
 
 	/** Web Service location to publish */
 	private String wsURL = null;
 
 	/** Port implementation */
 
-	private MediatorPortImpl portImpl = new MediatorPortImpl(this);
+	public MediatorPortImpl portImpl = new MediatorPortImpl(this);
 
 	/** Obtain Port implementation */
 	public MediatorPortType getPort() {
@@ -121,6 +133,7 @@ public class MediatorEndpointManager {
 		}
 
 		this.portImpl = null;
+		timer.cancel();
 		unpublishFromUDDI();
 	}
 
@@ -130,12 +143,22 @@ public class MediatorEndpointManager {
 		try {
 			// publish to UDDI
 			if (uddiURL != null) {
-				if (verbose) {
-					System.out.printf("Publishing '%s' to UDDI at %s%n", wsName, uddiURL);
+				if(verifyMediator().equals(Type.PRIMARY)){
+					
+						if (verbose) {
+							System.out.printf("Publishing '%s' to UDDI at %s%n", wsName, uddiURL);
+						}
+						uddiNaming = new UDDINaming(uddiURL);
+						uddiNaming.rebind(wsName, wsURL);
 				}
-				uddiNaming = new UDDINaming(uddiURL);
-				uddiNaming.rebind(wsName, wsURL);
+				else{
+				}
 			}
+			System.out.println("Mediator type: " + type.toString());
+			LifeProof lifeProof = new LifeProof(this);
+			System.out.println("Criou lifeProof");
+			timer = new Timer();
+			timer.scheduleAtFixedRate(lifeProof, 10000, 5000);
 		} catch (Exception e) {
 			uddiNaming = null;
 			if (verbose) {
@@ -160,6 +183,57 @@ public class MediatorEndpointManager {
 				System.out.printf("Caught exception when unbinding: %s%n", e);
 			}
 		}
+	}
+	
+	public Type verifyMediator(){
+		try{
+			uddiNaming = new UDDINaming(uddiURL);
+			if(uddiNaming.lookupRecord("T21_Mediator") == null){
+				type = Type.PRIMARY;
+				return type;
+			}
+		} catch (Exception e){}
+		type = Type.SECONDARY;
+		return type;
+	
+	}
+	
+	void replaceUDDI() throws Exception {
+		try {
+			// publish to UDDI
+			if (uddiURL != null) {
+				if (verbose) {
+					System.out.printf("Publishing '%s' to UDDI at %s%n", wsName, uddiURL);
+				}
+				uddiNaming = new UDDINaming(uddiURL);
+				uddiNaming.rebind(wsName, wsURL);
+			}
+			type = Type.PRIMARY;
+			System.out.println("Mediator type: " + type.toString());
+			//duvida
+			/*LifeProof lifeProof = new LifeProof(portImpl, type, wsURL);
+			System.out.println("Criou lifeProof");
+			Timer timer = new Timer();
+			timer.scheduleAtFixedRate(lifeProof, 10000, 5000);*/
+		} catch (Exception e) {
+			uddiNaming = null;
+			if (verbose) {
+				System.out.printf("Caught exception when binding to UDDI: %s%n", e);
+			}
+			throw e;
+		}
+	}
+	
+	public void setType(Type type){
+		this.type = type;
+	}
+	
+	public Type getType(){
+		return this.type;
+	}
+	
+	public String getWsURL(){
+		return this.wsURL;
 	}
 
 }
