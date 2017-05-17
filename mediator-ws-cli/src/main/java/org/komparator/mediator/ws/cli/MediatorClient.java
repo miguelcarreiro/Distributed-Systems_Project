@@ -49,6 +49,8 @@ public class MediatorClient implements MediatorPortType {
     
     private int timerRate = 5000;
     
+    private boolean stateChanged = false;
+    
     private SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
     /** output option **/
@@ -65,6 +67,12 @@ public class MediatorClient implements MediatorPortType {
     /** constructor with provided web service URL */
     public MediatorClient(String wsURL) throws MediatorClientException {
         this.wsURL = wsURL;
+        createStub();
+    }
+    
+    public MediatorClient(String wsURL, boolean stateChanged) throws MediatorClientException {
+        this.wsURL = wsURL;
+        this.stateChanged = stateChanged;
         createStub();
     }
 
@@ -280,29 +288,32 @@ public class MediatorClient implements MediatorPortType {
 
 	@Override
 	public void updateCart(CartView cart) {
-    	boolean connected = false;
-    	while(connected == false){
-			try{
-	    		port.updateCart(cart);
-	    		connected = true;
-	    	} catch (Exception e){
+    	if(!stateChanged){
+    		boolean connected = false;
+        	while(connected == false){
+    			try{
+    	    		port.updateCart(cart);
+    	    		connected = true;
+    	    	} catch (Exception e){
 
-	    	}
+    	    	}
+        	}
     	}
-
 	}
 
 	@Override
 	public void updateShopHistory(ShoppingResultView shopping) {
-		boolean connected = false;
-		while(connected == false){
-			try{
-	    		port.updateShopHistory(shopping);
-	    		connected = true;
-	    	} catch (Exception e){
+    	if(!stateChanged){
+    		boolean connected = false;
+        	while(connected == false){
+    			try{
+    	    		port.updateShopHistory(shopping);
+    	    		connected = true;
+    	    	} catch (Exception e){
 
-	    	}
-		}
+    	    	}
+        	}
+    	}
 
 	}
 	

@@ -219,9 +219,6 @@ public class MediatorPortImpl implements MediatorPortType {
 	public synchronized void addToCartWithId(String cartId, ItemIdView itemId, int itemQty, String valueString) throws InvalidCartId_Exception,
 			InvalidItemId_Exception, InvalidQuantity_Exception, NotEnoughItems_Exception {
 		if(!historyAddToCart.contains(valueString)){
-			System.out.println("--------------------------");
-			System.out.println("ID not in list: " + valueString);
-			System.out.println("--------------------------");
 			historyAddToCart.add(valueString);
 			UDDINaming uddi = endpointManager.getUddiNaming();
 			
@@ -348,7 +345,7 @@ public class MediatorPortImpl implements MediatorPortType {
 				wsURL = wsURL.substring(0, index + 3) + port + wsURL.substring(index + 4);
 			
 				try{
-					MediatorClient mediatorClient = new MediatorClient(wsURL);
+					MediatorClient mediatorClient = new MediatorClient(wsURL, endpointManager.stateChanged);
 					mediatorClient.updateCart(getCart(cartId));
 				} catch (Exception e){
 					
@@ -356,10 +353,6 @@ public class MediatorPortImpl implements MediatorPortType {
 			}
 			
 		} else{
-			System.out.println("--------------------------");
-			System.out.println("ID: " + valueString + " | addToCart: Duplicate request!");
-			System.out.println("--------------------------");
-			
 		}
 	}
 	
@@ -462,7 +455,7 @@ public class MediatorPortImpl implements MediatorPortType {
 						wsURL = wsURL.substring(0, index + 3) + port + wsURL.substring(index + 4);
 					
 						try{
-							MediatorClient mediatorClient = new MediatorClient(wsURL);
+							MediatorClient mediatorClient = new MediatorClient(wsURL, endpointManager.stateChanged);
 							mediatorClient.updateShopHistory(shopping);
 						} catch (Exception e){
 							

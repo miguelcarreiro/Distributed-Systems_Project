@@ -34,6 +34,8 @@ public class MediatorEndpointManager {
 	private Timer timer;
 	
 	private int timerRate = 5000;
+	
+	public boolean stateChanged = false;
 
 	/** Web Service location to publish */
 	private String wsURL = null;
@@ -211,6 +213,7 @@ public class MediatorEndpointManager {
 			}
 			type = Type.PRIMARY;
 			System.out.println("Mediator type: " + type.toString());
+			stateChanged = true;
 		} catch (Exception e) {
 			uddiNaming = null;
 			if (verbose) {

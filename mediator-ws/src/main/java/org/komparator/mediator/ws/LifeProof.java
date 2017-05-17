@@ -31,13 +31,13 @@ public class LifeProof extends TimerTask{
 			}
 
 			try{
-				MediatorClient client = new MediatorClient(wsURL);
+				MediatorClient client = new MediatorClient(wsURL, mediatorEndpointManager.stateChanged);
 				client.imAlive();
 
 			} catch (ClientTransportException ce){
-				System.out.println("Nao ha secundario");
 			} catch (MediatorClientException e){
-				System.out.println("correu mal xau");
+				System.out.println("MediatorClientException");
+				e.printStackTrace();
 			}
 			
 		} else {
