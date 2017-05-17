@@ -499,16 +499,19 @@ public class MediatorPortImpl implements MediatorPortType {
 		UDDINaming uddi = endpointManager.getUddiNaming();
 		Collection<UDDIRecord> colec = listSuppliers();
 		String result = "";
-		
-		for (UDDIRecord record : colec ){
-			try{
-				SupplierClient supplier = new SupplierClient(record.getUrl());
-				String pingResponse = supplier.ping(string);
-				result += record.getOrgName() + " OK: " + pingResponse + "\n";
-				
-			} catch (Exception e){
-				System.out.println(record.getOrgName() + "not OK: Please check!");
+		if(colec.size() != 0){
+			for (UDDIRecord record : colec ){
+				try{
+					SupplierClient supplier = new SupplierClient(record.getUrl());
+					String pingResponse = supplier.ping(string);
+					result += record.getOrgName() + " OK: " + pingResponse + "\n";
+					
+				} catch (Exception e){
+					System.out.println(record.getOrgName() + "not OK: Please check!");
+				}
 			}
+		} else{
+			return "Ping with mediator done, no suppliers registered";
 		}
 		System.out.println(result);
 		return "Ping with mediator and all registered suppliers done";
@@ -544,12 +547,13 @@ public class MediatorPortImpl implements MediatorPortType {
 	
 	@Override
 	public void imAlive() {
-		System.out.println("Imalive:");
-		if(endpointManager.type.equals(Type.PRIMARY)){
-			System.out.println("Type: " + endpointManager.type.toString());
-		} else {
-			Date date = new Date();
-			actualDate = date.getTime();
+		try{
+			if(endpointManager.type.equals(Type.SECONDARY)){
+				Date date = new Date();
+				actualDate = date.getTime();
+			}
+		} catch(NullPointerException e){
+			
 		}
 	}
 	

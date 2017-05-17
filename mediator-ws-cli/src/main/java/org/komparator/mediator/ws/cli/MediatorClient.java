@@ -2,6 +2,8 @@ package org.komparator.mediator.ws.cli;
 
 import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
 
+import java.lang.reflect.InvocationTargetException;
+import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +11,7 @@ import javax.xml.ws.BindingProvider;
 import org.komparator.mediator.ws.*;
 
 import com.oracle.webservices.api.message.ReadOnlyPropertyException;
+import com.sun.xml.ws.client.ClientTransportException;
 
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 
@@ -41,6 +44,8 @@ public class MediatorClient implements MediatorPortType {
     public String getWsURL() {
         return wsURL;
     }
+    
+    private int timerRate = 5000;
 
     /** output option **/
     private boolean verbose = false;
@@ -119,40 +124,113 @@ public class MediatorClient implements MediatorPortType {
 	}
 
     @Override
-	public String ping(String arg0) {
-		return port.ping(arg0);
+	public String ping(String arg0){
+    	String result = null;
+    	boolean connected = false;
+    	while (connected  == false){
+    		try{
+        		result = port.ping(arg0);
+        		connected = true;
+        	} catch (Exception e){
+        		connect();
+        	}
+    	}
+    	return result;
 	}
 
     @Override
 	public List<ItemView> searchItems(String descText) throws InvalidText_Exception {
-		return port.searchItems(descText);
+      	List<ItemView> result = null;
+      	boolean connected = false;
+      	while(connected == false){
+	    	try{
+	    		result = port.searchItems(descText);
+	    		connected = true;
+	    	} catch (InvalidText_Exception it){
+	    		throw it;
+	    	} catch (Exception e){
+	    		connect();
+	    	}
+      	}
+
+    	return result;
 	}
 
     @Override
 	public List<CartView> listCarts() {
-		return port.listCarts();
+      	List<CartView> result = null;
+      	boolean connected = false;
+      	while(connected == false)
+	    	try{
+	    		result = port.listCarts();
+	    		connected = true;
+	    	} catch (Exception e){
+	    		connect();
+	    	}
+    	return result;
 	}
 
 	@Override
 	public List<ItemView> getItems(String productId) throws InvalidItemId_Exception {
-		return port.getItems(productId);
+      	List<ItemView> result = null;
+      	boolean connected = false;
+      	while(connected == false){
+	    	try{
+	    		result = port.getItems(productId);
+	    	} catch(InvalidItemId_Exception it){
+	    		throw it;
+	    	} catch (Exception e){
+	    		connect();
+	    	}
+      	}
+    	return result;
 	}
 
 	@Override
 	public ShoppingResultView buyCart(String cartId, String creditCardNr)
 			throws EmptyCart_Exception, InvalidCartId_Exception, InvalidCreditCard_Exception {
-		return port.buyCart(cartId, creditCardNr);
+      	ShoppingResultView result = null;
+      	boolean connected = false;
+      	while(connected == false){
+	    	try{
+	    		result = port.buyCart(cartId, creditCardNr);
+	    	} catch(EmptyCart_Exception | InvalidCartId_Exception | InvalidCreditCard_Exception e){
+	    		throw e;
+	    	} catch (Exception e){
+	    		connect();
+	    	}
+      	}
+    	return result;
 	}
 
 	@Override
 	public void addToCart(String cartId, ItemIdView itemId, int itemQty) throws InvalidCartId_Exception,
 			InvalidItemId_Exception, InvalidQuantity_Exception, NotEnoughItems_Exception {
-		port.addToCart(cartId, itemId, itemQty);
+    	boolean connected = false;
+    	while(connected == false){
+			try{
+	    		port.addToCart(cartId, itemId, itemQty);
+	    	} catch (InvalidCartId_Exception | InvalidItemId_Exception | InvalidQuantity_Exception | NotEnoughItems_Exception e) {
+	    		throw e;
+	    	} catch (Exception e){
+	    		connect();
+	    	}
+    	}
 	}
 
 	@Override
 	public List<ShoppingResultView> shopHistory() {
-		return port.shopHistory();
+		List<ShoppingResultView> result = null;
+		boolean connected = false;
+		while(connected == false){
+	    	try{
+	    		result = port.shopHistory();
+	    	} catch (Exception e){
+	    		connect();
+	    	}
+		}
+    	return result;
+
 	}
 	
 	@Override
@@ -161,29 +239,61 @@ public class MediatorClient implements MediatorPortType {
          Map<String, Object> requestContext = bindingProvider
                  .getRequestContext();
          requestContext.put(ENDPOINT_ADDRESS_PROPERTY, wsURL);
-         int connectionTimeout = 5000;
          final List<String> CONN_TIME_PROPS = new ArrayList<String>();
          CONN_TIME_PROPS.add("com.sun.xml.ws.connect.timeout");
          CONN_TIME_PROPS.add("com.sun.xml.internal.ws.connect.timeout");
          CONN_TIME_PROPS.add("javax.xml.ws.client.connectionTimeout");
 
          for (String propName : CONN_TIME_PROPS)
-             requestContext.put(propName, connectionTimeout);
-         System.out.printf("Set connection timeout to %d milliseconds%n", connectionTimeout);
+             requestContext.put(propName, getTimerRate());
+         System.out.printf("Set connection timeout to %d milliseconds%n", getTimerRate());
 		 
          port.imAlive();
 	}
 
 	@Override
 	public void updateCart(CartView cart) {
-		port.updateCart(cart);
-		
+    	boolean connected = false;
+    	while(connected == false){
+			try{
+	    		port.updateCart(cart);
+	    	} catch (Exception e){
+	    		connect();
+	    	}
+    	}
+
 	}
 
 	@Override
 	public void updateShopHistory(ShoppingResultView shopping) {
-		port.updateShopHistory(shopping);
+    	try{
+    		port.updateShopHistory(shopping);
+    	} catch (Exception e){
+    		connect();
+    		port.updateShopHistory(shopping);
+    	}
+
+	}
+	
+	private void connect(){
+		System.out.println("Connection error: pausing");
+		try{
+			Thread.sleep(getTimerRate()*3);
+			uddiLookup();
+			createStub();
+			System.out.println("Connection restored: continuing process");
+		} catch(Exception e){
+			
+		} 
 		
+	}
+	
+	public void setTimerRate(int rate){
+		this.timerRate = rate;
+	}
+	
+	public int getTimerRate(){
+		return this.timerRate;
 	}
  
 }

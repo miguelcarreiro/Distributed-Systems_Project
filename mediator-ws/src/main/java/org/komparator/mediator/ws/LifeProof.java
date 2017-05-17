@@ -43,7 +43,7 @@ public class LifeProof extends TimerTask{
 		} else {
 			Date date = new Date();
 			MediatorPortType portType = mediatorEndpointManager.getPort();
-			if(date.getTime() - mediatorEndpointManager.portImpl.getActualDate() > 5000){
+			if(date.getTime() - mediatorEndpointManager.portImpl.getActualDate() > mediatorEndpointManager.getTimerRate()){
 				System.out.println("Falhou! Servidor secundario vai assumir papel de principal");
 				try{
 					mediatorEndpointManager.replaceUDDI();

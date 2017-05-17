@@ -33,7 +33,6 @@ public class MediatorApp {
 
 		try {
 			endpoint.start();
-			
 			endpoint.awaitConnections();
 			
 		} finally {

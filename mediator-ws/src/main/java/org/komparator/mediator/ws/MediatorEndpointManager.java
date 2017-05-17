@@ -32,6 +32,8 @@ public class MediatorEndpointManager {
 	Type type;
 	
 	private Timer timer;
+	
+	private int timerRate = 5000;
 
 	/** Web Service location to publish */
 	private String wsURL = null;
@@ -42,7 +44,6 @@ public class MediatorEndpointManager {
 
 	/** Obtain Port implementation */
 	public MediatorPortType getPort() {
-		
         return portImpl;
 	}
 
@@ -158,7 +159,7 @@ public class MediatorEndpointManager {
 			LifeProof lifeProof = new LifeProof(this);
 			System.out.println("Criou lifeProof");
 			timer = new Timer();
-			timer.scheduleAtFixedRate(lifeProof, 10000, 5000);
+			timer.scheduleAtFixedRate(lifeProof, 10000, getTimerRate());
 		} catch (Exception e) {
 			uddiNaming = null;
 			if (verbose) {
@@ -210,11 +211,6 @@ public class MediatorEndpointManager {
 			}
 			type = Type.PRIMARY;
 			System.out.println("Mediator type: " + type.toString());
-			//duvida
-			/*LifeProof lifeProof = new LifeProof(portImpl, type, wsURL);
-			System.out.println("Criou lifeProof");
-			Timer timer = new Timer();
-			timer.scheduleAtFixedRate(lifeProof, 10000, 5000);*/
 		} catch (Exception e) {
 			uddiNaming = null;
 			if (verbose) {
@@ -234,6 +230,14 @@ public class MediatorEndpointManager {
 	
 	public String getWsURL(){
 		return this.wsURL;
+	}
+	
+	public void setTimerRate(int rate){
+		this.timerRate = rate;
+	}
+	
+	public int getTimerRate(){
+		return this.timerRate;
 	}
 
 }

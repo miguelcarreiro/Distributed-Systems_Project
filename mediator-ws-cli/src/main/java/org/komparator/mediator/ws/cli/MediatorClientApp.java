@@ -34,11 +34,15 @@ public class MediatorClientApp {
 
         // the following remote invocations are just basic examples
         // the actual tests are made using JUnit
-
         System.out.println("Invoke ping()...");
-        String result = client.ping("Mediator_client");
-        System.out.println(result);
-        client.imAlive();
+        while(1==1){
+        	String result = client.ping("Mediator_client");
+            System.out.println(result);
+            Thread.sleep(100);
+        }
+        
+   
+        
 
     }
 }
