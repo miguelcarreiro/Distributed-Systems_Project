@@ -124,7 +124,15 @@ public class MediatorClient implements MediatorPortType {
     
     @Override
 	public void clear() {
-		port.clear();
+    	boolean connected = false;
+    	while (connected  == false){
+    		try{
+        		port.clear();
+        		connected = true;
+        	} catch (Exception e){
+        		connect();
+        	}
+    	}
 	}
 
     @Override
@@ -198,7 +206,6 @@ public class MediatorClient implements MediatorPortType {
       	boolean connected = false;
       	while(connected == false){
 	    	try{
-	    		result = port.buyCartWithId(cartId, creditCardNr, valueString);
 	    		result = port.buyCartWithId(cartId, creditCardNr, valueString);
 	    		connected = true;
 	    	} catch(EmptyCart_Exception | InvalidCartId_Exception | InvalidCreditCard_Exception e){
@@ -279,7 +286,7 @@ public class MediatorClient implements MediatorPortType {
 	    		port.updateCart(cart);
 	    		connected = true;
 	    	} catch (Exception e){
-	    		connect();
+
 	    	}
     	}
 
@@ -293,7 +300,7 @@ public class MediatorClient implements MediatorPortType {
 	    		port.updateShopHistory(shopping);
 	    		connected = true;
 	    	} catch (Exception e){
-	    		connect();
+
 	    	}
 		}
 

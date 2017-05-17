@@ -1,5 +1,7 @@
 package org.komparator.mediator.ws.cli;
 
+import org.komparator.mediator.ws.ItemIdView;
+
 public class MediatorClientApp {
 
     public static void main(String[] args) throws Exception {
@@ -40,9 +42,7 @@ public class MediatorClientApp {
             System.out.println(result);
             Thread.sleep(100);
         }
-        
-   
-        
+    
 
     }
 }

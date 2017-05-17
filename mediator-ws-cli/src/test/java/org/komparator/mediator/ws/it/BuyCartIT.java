@@ -225,6 +225,12 @@ public class BuyCartIT extends BaseIT {
 		assertEquals(3, shpResView.getPurchasedItems().size());
 		final int expectedTotalPrice = 2 * 3 + 1 * 4 + 3 * 9; // sum(qty*price)
 		assertEquals(expectedTotalPrice, shpResView.getTotalPrice());
+		try{
+			System.out.println("Teste: 10 segundos para desligar mediator principal!");
+			Thread.sleep(10000);
+		} catch (Exception e){
+			
+		}
 	}
 
 	@Test
