@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.Timer;
+import java.util.TreeMap;
 
 import javax.jws.HandlerChain;
 import javax.jws.WebService;
@@ -58,6 +59,10 @@ public class MediatorPortImpl implements MediatorPortType {
 	private static int idBuy = 0;
 	
 	private long actualDate;
+
+	private TreeMap<String, ShoppingResultView> historyBuyCart = new TreeMap<String, ShoppingResultView>();
+	
+	private List<String> historyAddToCart = new ArrayList<String>();
 	
 
 	// Main operations -------------------------------------------------------
@@ -211,248 +216,264 @@ public class MediatorPortImpl implements MediatorPortType {
 	}
 	
 	@Override
-	public synchronized void addToCart(String cartId, ItemIdView itemId, int itemQty) throws InvalidCartId_Exception,
+	public synchronized void addToCartWithId(String cartId, ItemIdView itemId, int itemQty, String valueString) throws InvalidCartId_Exception,
 			InvalidItemId_Exception, InvalidQuantity_Exception, NotEnoughItems_Exception {
-		
-		UDDINaming uddi = endpointManager.getUddiNaming();
-		
-		Collection<UDDIRecord> colec = listSuppliers();
-		
-		List<CartItemView> itemsOfCart = new ArrayList<CartItemView>();
-		
-		boolean productInCart = false;
-		
-		int productQty = 0;
-		
-		if(cartId == null){
-			throwInvalidCartId("CartId cannot be null!");
-		}
-		
-		if(cartId.equals("")){
-			throwInvalidCartId("CartId cannot be blank!");
-		}
-
-		boolean cartEx = cartExists(cartId);
-		
-		if(itemId == null){
-			throwInvalidItemId("ItemId cannot be null!");
-		}
-		
-		if(itemId.getProductId() == null || itemId.getSupplierId() ==  null){
-
-			throwInvalidItemId("ItemId parameters cannot be null or empty!");
-		}
-		
-		if(itemId.getProductId().equals("") || itemId.getSupplierId() .equals("")){
+		if(!historyAddToCart.contains(valueString)){
+			System.out.println("--------------------------");
+			System.out.println("ID not in list: " + valueString);
+			System.out.println("--------------------------");
+			historyAddToCart.add(valueString);
+			UDDINaming uddi = endpointManager.getUddiNaming();
 			
-			throwInvalidItemId("ItemId parameters cannot be null or empty!");
-		}
-		
-		if(itemQty <= 0){
-			throwInvalidQuantity("Quantity cannot be negative or zero!");
-		}
-		for (UDDIRecord record : colec ){
-			if(record.getOrgName().equals(itemId.getSupplierId())){
+			Collection<UDDIRecord> colec = listSuppliers();
+			
+			List<CartItemView> itemsOfCart = new ArrayList<CartItemView>();
+			
+			boolean productInCart = false;
+			
+			int productQty = 0;
+			
+			if(cartId == null){
+				throwInvalidCartId("CartId cannot be null!");
+			}
+			
+			if(cartId.equals("")){
+				throwInvalidCartId("CartId cannot be blank!");
+			}
+	
+			boolean cartEx = cartExists(cartId);
+			
+			if(itemId == null){
+				throwInvalidItemId("ItemId cannot be null!");
+			}
+			
+			if(itemId.getProductId() == null || itemId.getSupplierId() ==  null){
+	
+				throwInvalidItemId("ItemId parameters cannot be null or empty!");
+			}
+			
+			if(itemId.getProductId().equals("") || itemId.getSupplierId() .equals("")){
 				
-				SupplierClient supplier;
-				
-				ProductView product = null;
-				productQty = 0;
-				try {
-					supplier = new SupplierClient(record.getUrl());
+				throwInvalidItemId("ItemId parameters cannot be null or empty!");
+			}
+			
+			if(itemQty <= 0){
+				throwInvalidQuantity("Quantity cannot be negative or zero!");
+			}
+			for (UDDIRecord record : colec ){
+				if(record.getOrgName().equals(itemId.getSupplierId())){
 					
-					product = supplier.getProduct(itemId.getProductId());
-					if (product == null){
-						throwInvalidItemId("Product not exists!");
-					}
-					productQty = product.getQuantity();
-					if(productQty < itemQty){
-						throwNotEnoughItems("Not enough items! ");
-					}
+					SupplierClient supplier;
 					
-				} catch (SupplierClientException e) {
-					System.out.println("Failure in supplier " + record.getOrgName());
-					return;
-				} catch (BadProductId_Exception e) {
-					
-				}
-				
-				if(cartEx){
-					CartView carro = getCart(cartId);
-					for(CartItemView c: carro.items){
+					ProductView product = null;
+					productQty = 0;
+					try {
+						supplier = new SupplierClient(record.getUrl());
 						
-						if(c.getItem().getItemId().getProductId().equals(itemId.getProductId()) && c.getItem().getItemId().getSupplierId().equals(itemId.getSupplierId())){
-							if((c.getQuantity() + itemQty) > productQty){
-								throwNotEnoughItems("Not enough items! ");
-							} else {
-								c.setQuantity( c.getQuantity() + itemQty) ;
-								productInCart = true;
+						product = supplier.getProduct(itemId.getProductId());
+						if (product == null){
+							throwInvalidItemId("Product not exists!");
+						}
+						productQty = product.getQuantity();
+						if(productQty < itemQty){
+							throwNotEnoughItems("Not enough items! ");
+						}
+						
+					} catch (SupplierClientException e) {
+						System.out.println("Failure in supplier " + record.getOrgName());
+						return;
+					} catch (BadProductId_Exception e) {
+						
+					}
+					
+					if(cartEx){
+						CartView carro = getCart(cartId);
+						for(CartItemView c: carro.items){
+							
+							if(c.getItem().getItemId().getProductId().equals(itemId.getProductId()) && c.getItem().getItemId().getSupplierId().equals(itemId.getSupplierId())){
+								if((c.getQuantity() + itemQty) > productQty){
+									throwNotEnoughItems("Not enough items! ");
+								} else {
+									c.setQuantity( c.getQuantity() + itemQty) ;
+									productInCart = true;
+								}
 							}
 						}
 					}
+	
+					if(!productInCart && product != null){
+						ItemView iV = new ItemView();
+						
+						CartItemView cartItem = new CartItemView();
+						
+						iV.setItemId(itemId);
+						
+						iV.setDesc(product.getDesc());
+						
+						iV.setPrice(product.getPrice());
+						
+						cartItem.setItem(iV);
+						
+						cartItem.setQuantity(itemQty);
+						
+						itemsOfCart.add(cartItem);
+					}
+					productInCart = false;
 				}
-
-				if(!productInCart && product != null){
-					ItemView iV = new ItemView();
-					
-					CartItemView cartItem = new CartItemView();
-					
-					iV.setItemId(itemId);
-					
-					iV.setDesc(product.getDesc());
-					
-					iV.setPrice(product.getPrice());
-					
-					cartItem.setItem(iV);
-					
-					cartItem.setQuantity(itemQty);
-					
-					itemsOfCart.add(cartItem);
-				}
-				productInCart = false;
 			}
-		}
-		if(!cartEx){
-			CartView carrinho = new CartView();
-			
-			carrinho.items = itemsOfCart;
-			
-			carrinho.setCartId(cartId);
-			
-			cartList.add(carrinho);
-		}
-		
-		else{
-			CartView carrinho = getCart(cartId);
-			for(CartItemView i : itemsOfCart){
-				carrinho.items.add(i);
+			if(!cartEx){
+				CartView carrinho = new CartView();
+				
+				carrinho.items = itemsOfCart;
+				
+				carrinho.setCartId(cartId);
+				
+				cartList.add(carrinho);
 			}
 			
-		}
-		// update cart secondary mediator
-		String wsURL = endpointManager.getWsURL();
-		int index = wsURL.indexOf("8");
-		if(wsURL.length() > index + 4){
-			String strPort = wsURL.substring(index+3, index+4);
-			int port = Integer.parseInt(strPort);
-			port = (port % 2) + 1;
-			wsURL = wsURL.substring(0, index + 3) + port + wsURL.substring(index + 4);
-		
-			try{
-				MediatorClient mediatorClient = new MediatorClient(wsURL);
-				mediatorClient.updateCart(getCart(cartId));
-			} catch (Exception e){
+			else{
+				CartView carrinho = getCart(cartId);
+				for(CartItemView i : itemsOfCart){
+					carrinho.items.add(i);
+				}
 				
 			}
+			// update cart secondary mediator
+			String wsURL = endpointManager.getWsURL();
+			int index = wsURL.indexOf("8");
+			if(wsURL.length() > index + 4){
+				String strPort = wsURL.substring(index+3, index+4);
+				int port = Integer.parseInt(strPort);
+				port = (port % 2) + 1;
+				wsURL = wsURL.substring(0, index + 3) + port + wsURL.substring(index + 4);
+			
+				try{
+					MediatorClient mediatorClient = new MediatorClient(wsURL);
+					mediatorClient.updateCart(getCart(cartId));
+				} catch (Exception e){
+					
+				}
+			}
+			
+		} else{
+			System.out.println("--------------------------");
+			System.out.println("ID: " + valueString + " | addToCart: Duplicate request!");
+			System.out.println("--------------------------");
+			
 		}
 	}
 	
 	@Override
-	public synchronized ShoppingResultView buyCart(String cartId, String creditCardNr)
+	public synchronized ShoppingResultView buyCartWithId(String cartId, String creditCardNr, String valueString)
 			throws EmptyCart_Exception, InvalidCartId_Exception, InvalidCreditCard_Exception {
-		
-		UDDINaming uddi = endpointManager.getUddiNaming();
-		
-		Collection<UDDIRecord> colec = listSuppliers();
-		List<CartItemView> purchases = new ArrayList<CartItemView>();
-		List<CartItemView> rejected = new ArrayList<CartItemView>();
-		ShoppingResultView shopping = new ShoppingResultView();
-		int totalPrice = 0;
-		
-		if(cartId == null || cartId.equals("")){
+		if(!historyBuyCart.containsKey(valueString)){
+			UDDINaming uddi = endpointManager.getUddiNaming();
 			
-			throwInvalidCartId("CartId cannot be null or empty!");
-		}
-		
-		if(creditCardNr == null || creditCardNr.equals("")){
-			throwInvalidCreditCard("CreditCartNr cannot be null or empty!");
-		}
-		
-		if(getCart(cartId) == null || getCart(cartId).getItems().size() == 0){
-			throwInvalidCartId("Cart doesn't exist!");
-		}
-		
-		try{
-			CreditCardClient creditCard = new CreditCardClient("http://ws.sd.rnl.tecnico.ulisboa.pt:8080/cc");
-		
-			if(creditCard.validateNumber(creditCardNr)){
+			Collection<UDDIRecord> colec = listSuppliers();
+			List<CartItemView> purchases = new ArrayList<CartItemView>();
+			List<CartItemView> rejected = new ArrayList<CartItemView>();
+			ShoppingResultView shopping = new ShoppingResultView();
+			int totalPrice = 0;
 			
-				for (UDDIRecord record : colec ){
-					
-					for(CartView lista: cartList){
+			if(cartId == null || cartId.equals("")){
+				
+				throwInvalidCartId("CartId cannot be null or empty!");
+			}
+			
+			if(creditCardNr == null || creditCardNr.equals("")){
+				throwInvalidCreditCard("CreditCartNr cannot be null or empty!");
+			}
+			
+			if(getCart(cartId) == null || getCart(cartId).getItems().size() == 0){
+				throwInvalidCartId("Cart doesn't exist!");
+			}
+			
+			try{
+				CreditCardClient creditCard = new CreditCardClient("http://ws.sd.rnl.tecnico.ulisboa.pt:8080/cc");
+			
+				if(creditCard.validateNumber(creditCardNr)){
+				
+					for (UDDIRecord record : colec ){
 						
-						if(lista.getCartId().equals(cartId)){
+						for(CartView lista: cartList){
 							
-							for(CartItemView items: lista.items){
+							if(lista.getCartId().equals(cartId)){
 								
-								if(items.getItem().getItemId().getSupplierId().equals(record.getOrgName())){
+								for(CartItemView items: lista.items){
 									
-									try{
-										SupplierClient supplier = new SupplierClient(record.getUrl());
-										supplier.buyProduct(items.getItem().getItemId().getProductId(), items.getQuantity());
-										purchases.add(items);
-										totalPrice += (items.getItem().getPrice())*(items.getQuantity());
-									} catch (InsufficientQuantity_Exception e) {
-										rejected.add(items);
+									if(items.getItem().getItemId().getSupplierId().equals(record.getOrgName())){
 										
-									} catch (Exception e){	
+										try{
+											SupplierClient supplier = new SupplierClient(record.getUrl());
+											supplier.buyProduct(items.getItem().getItemId().getProductId(), items.getQuantity());
+											purchases.add(items);
+											totalPrice += (items.getItem().getPrice())*(items.getQuantity());
+										} catch (InsufficientQuantity_Exception e) {
+											rejected.add(items);
+											
+										} catch (Exception e){	
+										}
 									}
 								}
 							}
 						}
 					}
 				}
-			}
-			else{
-				throwInvalidCreditCard("CreditCart payment refused!");
-			}
-		} catch(InvalidCreditCard_Exception | CreditCardClientException e){
-				throwInvalidCreditCard("Error creating credit card!");
-		}
-		
-		Result result;
-		
-		if(purchases.size() == 0){
-			result = Result.EMPTY;
-		}
-		else if(rejected.size() == 0){
-			result = Result.COMPLETE;
-		}
-		else {
-			result = Result.PARTIAL;
-		}
-		
-		shopping.setResult(result);
-		shopping.setTotalPrice(totalPrice);
-		shopping.setId(Integer.toString(idBuy));
-		idBuy++;
-
-		if(purchases.size() > 0){
-			shopping.purchasedItems = purchases;
-			}
-		
-		if(rejected.size() > 0){
-			shopping.droppedItems = rejected;
-		}
-		
-		shopHistoryList.add(0, shopping);
-		// update cart secondary mediator
-				String wsURL = endpointManager.getWsURL();
-				int index = wsURL.indexOf("8");
-				if(wsURL.length() > index + 4){
-					String strPort = wsURL.substring(index+3, index+4);
-					int port = Integer.parseInt(strPort);
-					port = (port % 2) + 1;
-					wsURL = wsURL.substring(0, index + 3) + port + wsURL.substring(index + 4);
-				
-					try{
-						MediatorClient mediatorClient = new MediatorClient(wsURL);
-						mediatorClient.updateShopHistory(shopping);
-					} catch (Exception e){
-						
-					}
+				else{
+					throwInvalidCreditCard("CreditCart payment refused!");
 				}
-		return shopping;
+			} catch(InvalidCreditCard_Exception | CreditCardClientException e){
+					throwInvalidCreditCard("Error creating credit card!");
+			}
+			
+			Result result;
+			
+			if(purchases.size() == 0){
+				result = Result.EMPTY;
+			}
+			else if(rejected.size() == 0){
+				result = Result.COMPLETE;
+			}
+			else {
+				result = Result.PARTIAL;
+			}
+			
+			shopping.setResult(result);
+			shopping.setTotalPrice(totalPrice);
+			shopping.setId(Integer.toString(idBuy));
+			idBuy++;
+	
+			if(purchases.size() > 0){
+				shopping.purchasedItems = purchases;
+				}
+			
+			if(rejected.size() > 0){
+				shopping.droppedItems = rejected;
+			}
+			
+			shopHistoryList.add(0, shopping);
+			// update cart secondary mediator
+					String wsURL = endpointManager.getWsURL();
+					int index = wsURL.indexOf("8");
+					if(wsURL.length() > index + 4){
+						String strPort = wsURL.substring(index+3, index+4);
+						int port = Integer.parseInt(strPort);
+						port = (port % 2) + 1;
+						wsURL = wsURL.substring(0, index + 3) + port + wsURL.substring(index + 4);
+					
+						try{
+							MediatorClient mediatorClient = new MediatorClient(wsURL);
+							mediatorClient.updateShopHistory(shopping);
+						} catch (Exception e){
+							
+						}
+					}
+			historyBuyCart.put(valueString, shopping);
+			return shopping;
+		} else{
+			return historyBuyCart.get(valueString);
+		}
+		
 	}
 	// Auxiliary operations --------------------------------------------------	
 	
@@ -570,6 +591,12 @@ public class MediatorPortImpl implements MediatorPortType {
 	
 	@Override
 	public void updateShopHistory(ShoppingResultView shopping){
+		for(ShoppingResultView shoppingResultView : shopHistoryList){
+			if(shoppingResultView.getId().equals(shopping.getId())){
+				shopHistoryList.remove(shoppingResultView);
+				break;
+			}
+		}
 		shopHistoryList.add(0, shopping);
 	}
 

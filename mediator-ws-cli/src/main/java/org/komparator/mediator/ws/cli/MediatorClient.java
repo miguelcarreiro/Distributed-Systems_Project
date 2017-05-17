@@ -4,7 +4,9 @@ import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import javax.xml.ws.BindingProvider;
@@ -24,11 +26,9 @@ import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
  */
 public class MediatorClient implements MediatorPortType {
 
-// TODO uncomment after generate-sources
     // /** WS service */
     MediatorService service = null;
 
-// TODO uncomment after generate-sources
     // /** WS port (port type is the interface, port is the implementation) */
     MediatorPortType port = null;
 
@@ -40,12 +40,16 @@ public class MediatorClient implements MediatorPortType {
 
     /** WS endpoint address */
     private String wsURL = null; // default value is defined inside WSDL
+    
+    private int counter = 0;
 
     public String getWsURL() {
         return wsURL;
     }
     
     private int timerRate = 5000;
+    
+    private SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
     /** output option **/
     private boolean verbose = false;
@@ -177,6 +181,7 @@ public class MediatorClient implements MediatorPortType {
       	while(connected == false){
 	    	try{
 	    		result = port.getItems(productId);
+	    		connected = true;
 	    	} catch(InvalidItemId_Exception it){
 	    		throw it;
 	    	} catch (Exception e){
@@ -187,13 +192,15 @@ public class MediatorClient implements MediatorPortType {
 	}
 
 	@Override
-	public ShoppingResultView buyCart(String cartId, String creditCardNr)
+	public ShoppingResultView buyCartWithId(String cartId, String creditCardNr, String valueString)
 			throws EmptyCart_Exception, InvalidCartId_Exception, InvalidCreditCard_Exception {
       	ShoppingResultView result = null;
       	boolean connected = false;
       	while(connected == false){
 	    	try{
-	    		result = port.buyCart(cartId, creditCardNr);
+	    		result = port.buyCartWithId(cartId, creditCardNr, valueString);
+	    		result = port.buyCartWithId(cartId, creditCardNr, valueString);
+	    		connected = true;
 	    	} catch(EmptyCart_Exception | InvalidCartId_Exception | InvalidCreditCard_Exception e){
 	    		throw e;
 	    	} catch (Exception e){
@@ -202,20 +209,32 @@ public class MediatorClient implements MediatorPortType {
       	}
     	return result;
 	}
+	
+	public synchronized ShoppingResultView buyCart(String cartId, String creditCardNr) throws EmptyCart_Exception, InvalidCartId_Exception, InvalidCreditCard_Exception{
+		String valueString = dateFormatter.format(new Date());
+		return buyCartWithId(cartId, creditCardNr, valueString);
+	}
 
 	@Override
-	public void addToCart(String cartId, ItemIdView itemId, int itemQty) throws InvalidCartId_Exception,
+	public void addToCartWithId(String cartId, ItemIdView itemId, int itemQty, String valueString) throws InvalidCartId_Exception,
 			InvalidItemId_Exception, InvalidQuantity_Exception, NotEnoughItems_Exception {
     	boolean connected = false;
     	while(connected == false){
 			try{
-	    		port.addToCart(cartId, itemId, itemQty);
+	    		port.addToCartWithId(cartId, itemId, itemQty, valueString);
+	    		connected = true;
 	    	} catch (InvalidCartId_Exception | InvalidItemId_Exception | InvalidQuantity_Exception | NotEnoughItems_Exception e) {
 	    		throw e;
 	    	} catch (Exception e){
 	    		connect();
 	    	}
     	}
+	}
+	
+	public synchronized void addToCart(String cartId, ItemIdView itemId, int itemQty) throws InvalidCartId_Exception,
+	InvalidItemId_Exception, InvalidQuantity_Exception, NotEnoughItems_Exception{
+		String valueString = dateFormatter.format(new Date());
+		addToCartWithId(cartId, itemId, itemQty, valueString);
 	}
 
 	@Override
@@ -225,6 +244,7 @@ public class MediatorClient implements MediatorPortType {
 		while(connected == false){
 	    	try{
 	    		result = port.shopHistory();
+	    		connected = true;
 	    	} catch (Exception e){
 	    		connect();
 	    	}
@@ -257,6 +277,7 @@ public class MediatorClient implements MediatorPortType {
     	while(connected == false){
 			try{
 	    		port.updateCart(cart);
+	    		connected = true;
 	    	} catch (Exception e){
 	    		connect();
 	    	}
@@ -266,12 +287,15 @@ public class MediatorClient implements MediatorPortType {
 
 	@Override
 	public void updateShopHistory(ShoppingResultView shopping) {
-    	try{
-    		port.updateShopHistory(shopping);
-    	} catch (Exception e){
-    		connect();
-    		port.updateShopHistory(shopping);
-    	}
+		boolean connected = false;
+		while(connected == false){
+			try{
+	    		port.updateShopHistory(shopping);
+	    		connected = true;
+	    	} catch (Exception e){
+	    		connect();
+	    	}
+		}
 
 	}
 	
